@@ -1,9 +1,11 @@
 import Case from "case";
 
 export function encodeFilePath(path: string) {
-  return `file://${encodeURIComponent(path)
-    .replace(/(%2F)|(%5C)/g, "/")
-    .replace(/%3A/g, ":")}`;
+  // Serve local files through our custom protocol (registered in src/index.ts)
+  // so they load with webSecurity on, in both dev (http origin) and packaged
+  // builds. The whole absolute path is kept as one percent-encoded segment
+  // after the "local" host, and decoded back to a path in the main process.
+  return `kenku-media://local/${encodeURIComponent(path)}`;
 }
 
 export function getDropURL(dataTransfer: DataTransfer): string | undefined {

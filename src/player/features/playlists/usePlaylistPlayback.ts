@@ -103,6 +103,11 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
   );
 
   const seek = useCallback((to: number) => {
+    // Guard against non-finite values (e.g. the time slider can produce NaN
+    // when the track's duration isn't known yet, which would crash Howl.seek).
+    if (!Number.isFinite(to)) {
+      return;
+    }
     dispatch(updatePlayback(to));
     trackRef.current?.seek(to);
   }, []);
