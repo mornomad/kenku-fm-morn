@@ -36,6 +36,7 @@ export function PlaylistItem({
   const shuffle = useSelector(
     (state: RootState) => state.playlistPlayback.shuffle
   );
+  const uisettings = useSelector((state: RootState) => state.uisettings);
 
   const dispatch = useDispatch();
 
@@ -65,7 +66,7 @@ export function PlaylistItem({
       <CardActionArea onClick={() => onSelect(playlist.id)}>
         <CardMedia
           component="img"
-          height="200px"
+          height={uisettings.byName["listitemheight"].value}
           image={image}
           alt={"Background"}
           sx={{ pointerEvents: "none" }}
@@ -95,7 +96,17 @@ export function PlaylistItem({
           pointerEvents: "none",
         }}
       >
-        <Typography variant="h5" component="div">
+        <Typography
+          variant="h5"
+          component="div"
+          sx={{
+            fontSize: uisettings.byName["gridmode"].value == "small"
+              ? "1rem"
+              : uisettings.byName["gridmode"].value == "normal"
+                ? "1.5rem"
+                : "2rem"
+          }}
+        >
           {playlist.title}
         </Typography>
         <IconButton

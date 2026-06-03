@@ -14,6 +14,7 @@ import { PlaylistPlaybackSync } from "../features/playlists/PlaylistPlaybackSync
 import { Playlists } from "../features/playlists/Playlists";
 import { Playlist } from "../features/playlists/Playlist";
 import { Search } from "../features/search/Search";
+import { UISettings } from "../common/UISettings";
 
 import "../../renderer/app/App.css";
 import { Home } from "../features/home/Home";
@@ -47,6 +48,7 @@ export function App() {
   return (
     <>
       <WallPaper />
+      <UISettings />
       <Routes>
         <Route
           path="/"
