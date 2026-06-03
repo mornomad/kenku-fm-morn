@@ -5,8 +5,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import Add from "@mui/icons-material/AddCircleRounded";
 import Back from "@mui/icons-material/ChevronLeftRounded";
 import MoreVert from "@mui/icons-material/MoreVertRounded";
+import Checklist from "@mui/icons-material/ChecklistRounded";
+import LocalOffer from "@mui/icons-material/LocalOfferRounded";
+import Close from "@mui/icons-material/CloseRounded";
 import Backdrop from "@mui/material/Backdrop";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
@@ -23,6 +27,7 @@ import { PlaylistSettings } from "./PlaylistSettings";
 import { addTracks, removePlaylist, Track } from "./playlistsSlice";
 import { PlaylistTracks } from "./PlaylistTracks";
 import { TrackAdd } from "./TrackAdd";
+import { BulkTagDialog } from "./BulkTagDialog";
 
 type PlaylistProps = {
   onPlay: (track: Track) => void;
@@ -37,6 +42,21 @@ export function Playlist({ onPlay }: PlaylistProps) {
 
   const [addOpen, setAddOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Multi-select state for bulk tagging.
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
+
+  function toggleSelectionMode() {
+    setSelectionMode((on) => !on);
+    setSelectedIds([]);
+  }
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   const items = playlist.tracks.map((id) => playlists.tracks[id]);
 
@@ -142,21 +162,60 @@ export function Playlist({ onPlay }: PlaylistProps) {
           <Typography sx={{ zIndex: 1 }} variant="h3" noWrap>
             {playlist.title}
           </Typography>
-          <Stack direction="row">
-            <Tooltip title="Add Track">
-              <IconButton onClick={() => setAddOpen(true)}>
-                <Add />
-              </IconButton>
-            </Tooltip>
-            <IconButton onClick={handleMenuClick}>
-              <MoreVert />
-            </IconButton>
+          <Stack direction="row" alignItems="center" gap={0.5}>
+            {selectionMode ? (
+              <>
+                <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                  {selectedIds.length} selected
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => setSelectedIds(items.map((track) => track.id))}
+                >
+                  All
+                </Button>
+                <Tooltip title="Tag selected">
+                  <span>
+                    <IconButton
+                      disabled={selectedIds.length === 0}
+                      onClick={() => setBulkTagOpen(true)}
+                    >
+                      <LocalOffer />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Done">
+                  <IconButton onClick={toggleSelectionMode}>
+                    <Close />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <Tooltip title="Select tracks">
+                  <IconButton onClick={toggleSelectionMode}>
+                    <Checklist />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Add Track">
+                  <IconButton onClick={() => setAddOpen(true)}>
+                    <Add />
+                  </IconButton>
+                </Tooltip>
+                <IconButton onClick={handleMenuClick}>
+                  <MoreVert />
+                </IconButton>
+              </>
+            )}
           </Stack>
         </Stack>
         <PlaylistTracks
           items={items}
           playlist={playlist}
           onPlay={handleTrackPlay}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onToggleSelected={toggleSelected}
         />
         <Backdrop
           open={dragging}
@@ -190,6 +249,11 @@ export function Playlist({ onPlay }: PlaylistProps) {
         playlist={playlist}
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+      />
+      <BulkTagDialog
+        open={bulkTagOpen}
+        trackIds={selectedIds}
+        onClose={() => setBulkTagOpen(false)}
       />
     </>
   );

@@ -24,6 +24,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { Tag } from "../playlists/playlistsSlice";
 import { TagChip } from "../playlists/TagChip";
+import { TrackThumbnail } from "../playlists/TrackThumbnail";
+import { playlistImageUrl } from "../playlists/playlistImage";
 import {
   adjustVolume,
   playPause,
@@ -99,6 +101,11 @@ function Title() {
   const liveTagIds = useSelector((state: RootState) =>
     track ? state.playlists.tracks[track.id]?.tagIds : undefined,
   );
+  // The live track in the store (for the cover art, kept up to date if the
+  // user changes the thumbnail while it's playing).
+  const liveTrack = useSelector((state: RootState) =>
+    track ? state.playlists.tracks[track.id] : undefined,
+  );
   const noTrack = track?.title === undefined;
   const large = useMediaQuery(`(min-width: ${minWidthForLargeContext}px)`);
 
@@ -131,58 +138,76 @@ function Title() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        gap: 1.5,
         width: large ? "30%" : "100%",
-        flexDirection: "column",
       }}
     >
-      <Typography
-        variant="body2"
-        onClick={noTrack ? undefined : goToPlaylist}
-        title={noTrack ? undefined : "Go to playlist"}
-        sx={{
-          width: "100%",
-          textAlign: large ? undefined : "center",
-          ...clickableSx,
-        }}
-        noWrap
-        gutterBottom
-      >
-        {noTrack ? "" : track.title}
-      </Typography>
-      <Typography
-        variant="caption"
-        color="rgba(255, 255, 255, 0.8)"
-        onClick={noTrack ? undefined : goToPlaylist}
-        sx={{
-          width: "100%",
-          textAlign: large ? undefined : "center",
-          ...clickableSx,
-        }}
-        noWrap
-      >
-        {noTrack ? "" : playlists.playlists.byId[queue.playlistId]?.title}
-      </Typography>
-      {!noTrack && tags.length > 0 && (
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 0.5,
-            mt: 0.5,
-            maxWidth: "100%",
-            justifyContent: large ? "flex-start" : "center",
-          }}
-        >
-          {tags.map((tag) => (
-            <TagChip
-              key={tag.id}
-              tag={tag}
-              sx={{ height: 18, fontSize: 11 }}
-              onClick={() => navigate(`/search?tag=${tag.id}`)}
-            />
-          ))}
-        </Box>
+      {liveTrack && (
+        <TrackThumbnail
+          track={liveTrack}
+          size={44}
+          playlistImage={playlistImageUrl(
+            queue ? playlists.playlists.byId[queue.playlistId] : undefined,
+          )}
+        />
       )}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          flexGrow: 1,
+        }}
+      >
+        <Typography
+          variant="body2"
+          onClick={noTrack ? undefined : goToPlaylist}
+          title={noTrack ? undefined : "Go to playlist"}
+          sx={{
+            width: "100%",
+            textAlign: large ? undefined : "center",
+            ...clickableSx,
+          }}
+          noWrap
+          gutterBottom
+        >
+          {noTrack ? "" : track.title}
+        </Typography>
+        <Typography
+          variant="caption"
+          color="rgba(255, 255, 255, 0.8)"
+          onClick={noTrack ? undefined : goToPlaylist}
+          sx={{
+            width: "100%",
+            textAlign: large ? undefined : "center",
+            ...clickableSx,
+          }}
+          noWrap
+        >
+          {noTrack ? "" : playlists.playlists.byId[queue.playlistId]?.title}
+        </Typography>
+        {!noTrack && tags.length > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 0.5,
+              mt: 0.5,
+              maxWidth: "100%",
+              justifyContent: large ? "flex-start" : "center",
+            }}
+          >
+            {tags.map((tag) => (
+              <TagChip
+                key={tag.id}
+                tag={tag}
+                sx={{ height: 18, fontSize: 11 }}
+                onClick={() => navigate(`/search?tag=${tag.id}`)}
+              />
+            ))}
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }

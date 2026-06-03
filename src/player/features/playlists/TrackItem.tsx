@@ -7,6 +7,7 @@ import Pause from "@mui/icons-material/PauseRounded";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
+import Checkbox from "@mui/material/Checkbox";
 
 import MoreVert from "@mui/icons-material/MoreVertRounded";
 import Menu from "@mui/material/Menu";
@@ -26,6 +27,8 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { TrackSettings } from "./TrackSettings";
 import { TagChip } from "./TagChip";
+import { TrackThumbnail } from "./TrackThumbnail";
+import { playlistImageUrl } from "./playlistImage";
 import { PlaylistPickerDialog } from "./PlaylistPickerDialog";
 import { RootState } from "../../app/store";
 import {
@@ -40,9 +43,21 @@ type TrackItemProps = {
   track: Track;
   playlist: Playlist;
   onPlay: (id: string) => void;
+  // Multi-select (used on the playlist page). When selectionMode is on a
+  // checkbox is shown; the others are unset elsewhere (e.g. search).
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelected?: (id: string) => void;
 };
 
-export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
+export function TrackItem({
+  track,
+  playlist,
+  onPlay,
+  selectionMode,
+  selected,
+  onToggleSelected,
+}: TrackItemProps) {
   const isCurrentTrack = useSelector(
     (state: RootState) => state.playlistPlayback.track?.id === track.id,
   );
@@ -58,6 +73,9 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
   );
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // The playlist's image, used as the fallback cover for tracks without art.
+  const playlistImage = playlistImageUrl(playlist);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -140,6 +158,21 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
           dense
           selected={isCurrentTrack}
         >
+          {selectionMode && (
+            <Checkbox
+              edge="start"
+              checked={Boolean(selected)}
+              onChange={() => onToggleSelected?.(track.id)}
+              onClick={(event) => event.stopPropagation()}
+              sx={{ mr: 0.5 }}
+            />
+          )}
+          <TrackThumbnail
+            track={track}
+            size={40}
+            playlistImage={playlistImage}
+            sx={{ mr: 1.5 }}
+          />
           <ListItemText
             primary={track.title}
             secondary={
@@ -228,6 +261,7 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
       />
       <TrackSettings
         track={track}
+        playlistImage={playlistImage}
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
