@@ -51,6 +51,7 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
   const navigate = useNavigate();
   const playlists = useSelector((state: RootState) => state.playlists);
   const soundboards = useSelector((state: RootState) => state.soundboards);
+  const uisettings = useSelector((state: RootState) => state.uisettings);
 
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down("lg"));
@@ -67,6 +68,7 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
 
   return (
     <Container
+      maxWidth={uisettings.byName["containerwidth"].value == "fixed" ? "lg" : false}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -143,7 +145,12 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
         <CardContent>
           <Grid container spacing={2}>
             {playlistItems.map((playlist) => (
-              <Grid xs={6} sm={4} md={3} item key={playlist.id}>
+              <Grid
+                xs={Number(uisettings.byName["xscolumnsnumber"].value)}
+                sm={Number(uisettings.byName["smcolumnsnumber"].value)}
+                md={Number(uisettings.byName["mdcolumnsnumber"].value)}
+                item key={playlist.id}
+              >
                 <PlaylistItem
                   playlist={playlist}
                   onSelect={(id) => navigate(`/playlists/${id}`)}

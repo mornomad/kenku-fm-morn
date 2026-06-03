@@ -28,6 +28,8 @@ import { Playlist, Track, moveTrack } from "./playlistsSlice";
 import { moveQueueIfNeeded } from "./playlistPlaybackSlice";
 
 import { useHideScrollbar } from "../../../renderer/common/useHideScrollbar";
+import { useSelector } from "react-redux";
+import { RootState } from "../../app/store";
 
 type PlaylistTracksProps = {
   items: Track[];
@@ -56,6 +58,7 @@ export function PlaylistTracks({
   });
 
   const sensors = useSensors(pointerSensor, keyboardSensor);
+  const uisettings = useSelector((state: RootState) => state.uisettings);
 
   const [dragId, setDragId] = useState<string | null>(null);
   function handleDragStart(event: DragStartEvent) {
@@ -96,9 +99,9 @@ export function PlaylistTracks({
           "linear-gradient(to bottom, transparent, black 60px, black calc(100% - 64px), transparent)",
         position: "absolute",
         width: "100%",
-        height: "calc(100% - 60px)",
+        height: "calc(100% - 120px)",
         pt: "60px",
-        top: "60px",
+        top: "120px",
         left: 0,
         px: 2,
       }}
@@ -109,7 +112,7 @@ export function PlaylistTracks({
         sx={{
           width: "100%",
           minWidth: 360,
-          maxWidth: 720,
+          maxWidth: uisettings.byName["containerwidth"].value == "full" ? "100%" : 720,
           margin: "0 auto",
           marginBottom: "240px",
         }}

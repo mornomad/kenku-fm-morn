@@ -1,6 +1,7 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import playlistsReducer from "../features/playlists/playlistsSlice";
 import soundboardsReducer from "../features/soundboards/soundboardsSlice";
+import uisettingsReducer from "../common/UISettingsSlice";
 import playlsitPlaybackReducer from "../features/playlists/playlistPlaybackSlice";
 import soundboardPlaybackReducer from "../features/soundboards/soundboardPlaybackSlice";
 import settingsReducer from "../features/settings/settingsSlice";
@@ -41,6 +42,19 @@ const migrations = {
       },
     };
   },
+  3: (state: any) => {
+    return {
+      ...state,
+      uisettings: state.uisettings ?? {
+        byName: {},
+        allSettings: [
+          { name: 'gridmode', value: 'normal'},
+          { name: 'containerwidth', value: 'fixed'}
+        ]
+      }
+    };
+  }
+
 };
 
 const playbackPersistConfig = {
@@ -53,6 +67,7 @@ const playbackPersistConfig = {
 const rootReducer = combineReducers({
   playlists: playlistsReducer,
   soundboards: soundboardsReducer,
+  uisettings: uisettingsReducer,
   playlistPlayback: persistReducer(
     playbackPersistConfig,
     playlsitPlaybackReducer
@@ -63,9 +78,9 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
   key: "player",
-  version: 2,
+  version: 3,
   storage,
-  whitelist: ["playlists", "soundboards", "settings"],
+  whitelist: ["playlists", "soundboards", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),
 };
 
