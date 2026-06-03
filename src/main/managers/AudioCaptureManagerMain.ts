@@ -185,6 +185,12 @@ export class AudioCaptureManagerMain extends TypedEmitter<AudioCaptureManagerEve
     viewId: number
   ) => {
     const contents = webContents.fromId(viewId);
+    // The view may no longer exist (e.g. a stale id sent on launch), in which
+    // case fromId returns undefined. Bail out instead of crashing the main
+    // process with an uncaught exception dialog.
+    if (!contents) {
+      return;
+    }
     const mediaSourceId = contents.getMediaSourceId(
       this._browserWindow.webContents
     );
