@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 
 import AddIcon from "@mui/icons-material/AddCircleRounded";
+import SearchIcon from "@mui/icons-material/SearchRounded";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -14,6 +15,7 @@ import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import Link from "@mui/material/Link";
+import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import useTheme from "@mui/material/styles/useTheme";
 import Tooltip from "@mui/material/Tooltip";
@@ -47,6 +49,7 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
   const navigate = useNavigate();
   const playlists = useSelector((state: RootState) => state.playlists);
   const soundboards = useSelector((state: RootState) => state.soundboards);
+  const uisettings = useSelector((state: RootState) => state.uisettings);
 
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down("lg"));
@@ -63,6 +66,7 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
 
   return (
     <Container
+      maxWidth={uisettings.byName["containerwidth"].value == "fixed" ? "lg" : false}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -71,6 +75,20 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
         mb: "248px",
       }}
     >
+      <Paper
+        onClick={() => navigate("/search")}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          px: 2,
+          py: 1.5,
+          cursor: "pointer",
+        }}
+      >
+        <SearchIcon />
+        <Typography color="text.secondary">Search tracks by tag…</Typography>
+      </Paper>
       <Card>
         <CardContent>
           <Stack
@@ -96,7 +114,12 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
         <CardContent>
           <Grid container spacing={2}>
             {playlistItems.map((playlist) => (
-              <Grid xs={6} sm={4} md={3} item key={playlist.id}>
+              <Grid
+                xs={Number(uisettings.byName["xscolumnsnumber"].value)}
+                sm={Number(uisettings.byName["smcolumnsnumber"].value)}
+                md={Number(uisettings.byName["mdcolumnsnumber"].value)}
+                item key={playlist.id}
+              >
                 <PlaylistItem
                   playlist={playlist}
                   onSelect={(id) => navigate(`/playlists/${id}`)}

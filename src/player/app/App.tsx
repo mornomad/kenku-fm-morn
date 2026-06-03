@@ -13,6 +13,8 @@ import { PlaylistRemote } from "../features/playlists/PlaylistRemote";
 import { PlaylistPlaybackSync } from "../features/playlists/PlaylistPlaybackSync";
 import { Playlists } from "../features/playlists/Playlists";
 import { Playlist } from "../features/playlists/Playlist";
+import { Search } from "../features/search/Search";
+import { UISettings } from "../common/UISettings";
 
 import "../../renderer/app/App.css";
 import { Home } from "../features/home/Home";
@@ -46,6 +48,7 @@ export function App() {
   return (
     <>
       <WallPaper />
+      <UISettings />
       <Routes>
         <Route
           path="/"
@@ -57,6 +60,7 @@ export function App() {
           path="playlists"
           element={<Playlists onPlay={playlist.play} />}
         />
+        <Route path="search" element={<Search onPlay={playlist.play} />} />
         <Route
           path="playlists/:playlistId"
           element={<Playlist onPlay={playlist.play} />}

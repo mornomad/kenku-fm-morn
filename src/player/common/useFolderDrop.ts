@@ -7,6 +7,9 @@ export interface AudioFile {
   id: string;
   url: string;
   title: string;
+  // Folder-dropped files become Tracks directly, so they carry tagIds too.
+  // Newly imported files start with no tags.
+  tagIds: string[];
 }
 
 const supportedFileTypes = [
@@ -72,6 +75,7 @@ async function getDirectories(
           url: encodeFilePath(filePath),
           title: cleanFileName(file.name),
           id: uuid(),
+          tagIds: [],
         });
       }
     } else if (isFileSystemDirectoryEntry(entry)) {

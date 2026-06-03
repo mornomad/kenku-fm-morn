@@ -1,8 +1,11 @@
 import os from "os";
+import fs from "fs";
+import { Readable } from "stream";
 import {
   app,
   BrowserWindow,
   components,
+  protocol,
   session,
   shell,
   ipcMain,
@@ -17,6 +20,50 @@ import { getSavedBounds, saveWindowBounds } from "./bounds";
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+
+// Register a custom protocol so the player can load local audio/image files
+// with webSecurity on. In dev the UI is served from http://localhost, which
+// blocks file:// resources (the cause of "Unable to play track"); serving the
+// files through kenku-media:// sidesteps that in both dev and packaged builds.
+// Must be called before the app is ready.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "kenku-media",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
+]);
+
+// Content types for files served over kenku-media:// (audio tracks and the
+// image backgrounds). A correct Content-Type helps the media element decode.
+const mediaMimeTypes: Record<string, string> = {
+  ".mp3": "audio/mpeg",
+  ".m4a": "audio/mp4",
+  ".mp4": "audio/mp4",
+  ".aac": "audio/aac",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".oga": "audio/ogg",
+  ".opus": "audio/ogg",
+  ".flac": "audio/flac",
+  ".webm": "audio/webm",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".bmp": "image/bmp",
+  ".svg": "image/svg+xml",
+};
+
+const getMediaMimeType = (filePath: string): string => {
+  const ext = filePath.slice(filePath.lastIndexOf(".")).toLowerCase();
+  return mediaMimeTypes[ext] ?? "application/octet-stream";
+};
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 let window: BrowserWindow | null = null;
@@ -110,6 +157,56 @@ if (!hasSingleInstanceLock) {
   // initialization and is ready to create browser windows.
   // Some APIs can only be used after this event occurs.
   app.whenReady().then(async () => {
+    // Serve local files requested as kenku-media://local/<percent-encoded-path>.
+    // We implement HTTP Range requests so the player can seek: a media element
+    // only treats a source as seekable when the server answers ranges with a
+    // 206 response and an Accept-Ranges header.
+    protocol.handle("kenku-media", async (request) => {
+      const { pathname } = new URL(request.url);
+      // The absolute path is a single encoded segment after the host.
+      const filePath = decodeURIComponent(pathname.replace(/^\//, ""));
+
+      let size: number;
+      try {
+        size = (await fs.promises.stat(filePath)).size;
+      } catch {
+        return new Response("Not Found", { status: 404 });
+      }
+
+      const mimeType = getMediaMimeType(filePath);
+      const range = request.headers.get("Range");
+
+      if (range) {
+        // Parse "bytes=start-end" (either side may be omitted).
+        const match = /bytes=(\d*)-(\d*)/.exec(range);
+        let start = match && match[1] ? parseInt(match[1], 10) : 0;
+        let end = match && match[2] ? parseInt(match[2], 10) : size - 1;
+        if (!Number.isFinite(start) || start < 0) start = 0;
+        if (!Number.isFinite(end) || end >= size) end = size - 1;
+        if (start > end) start = end;
+        const stream = fs.createReadStream(filePath, { start, end });
+        return new Response(Readable.toWeb(stream) as unknown as ReadableStream, {
+          status: 206,
+          headers: {
+            "Content-Type": mimeType,
+            "Content-Length": String(end - start + 1),
+            "Content-Range": `bytes ${start}-${end}/${size}`,
+            "Accept-Ranges": "bytes",
+          },
+        });
+      }
+
+      const stream = fs.createReadStream(filePath);
+      return new Response(Readable.toWeb(stream) as unknown as ReadableStream, {
+        status: 200,
+        headers: {
+          "Content-Type": mimeType,
+          "Content-Length": String(size),
+          "Accept-Ranges": "bytes",
+        },
+      });
+    });
+
     let hasWidevineError = false;
 
     try {

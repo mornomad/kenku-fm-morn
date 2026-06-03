@@ -39,7 +39,7 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const id = uuid();
-    dispatch(addTrack({ track: { id, title, url }, playlistId }));
+    dispatch(addTrack({ track: { id, title, url, tagIds: [] }, playlistId }));
     dispatch(addTrackToQueueIfNeeded({ playlistId, trackId: id }));
     onClose();
   }
