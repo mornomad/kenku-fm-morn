@@ -6,12 +6,14 @@ import PlayArrow from "@mui/icons-material/PlayArrowRounded";
 import Pause from "@mui/icons-material/PauseRounded";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 
 import MoreVert from "@mui/icons-material/MoreVertRounded";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
-import { Track, removeTrack, Playlist } from "./playlistsSlice";
+import { Track, removeTrack, Playlist, Tag } from "./playlistsSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { TrackSettings } from "./TrackSettings";
 import { RootState } from "../../app/store";
@@ -35,6 +37,13 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
   );
   const playing = useSelector(
     (state: RootState) => state.playlistPlayback.playing && isCurrentTrack,
+  );
+  // Resolve this track's tag ids into the actual Tag objects so we can show
+  // their names and colors. Filter drops any id whose tag no longer exists.
+  const tags = useSelector((state: RootState) =>
+    track.tagIds
+      .map((id) => state.playlists.tags.byId[id])
+      .filter((tag): tag is Tag => Boolean(tag)),
   );
   const dispatch = useDispatch();
 
@@ -98,6 +107,32 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
         >
           <ListItemText
             primary={track.title}
+            secondary={
+              tags.length > 0 ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 0.5,
+                    mt: 0.5,
+                  }}
+                >
+                  {tags.map((tag) => (
+                    <Chip
+                      key={tag.id}
+                      label={tag.name}
+                      size="small"
+                      sx={{
+                        height: 18,
+                        fontSize: 11,
+                        backgroundColor: tag.color,
+                        color: "rgba(0,0,0,0.87)",
+                      }}
+                    />
+                  ))}
+                </Box>
+              ) : undefined
+            }
             sx={{
               ".MuiListItemText-primary": {
                 whiteSpace: "nowrap",
@@ -108,6 +143,9 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
             primaryTypographyProps={{
               typography: "body1",
             }}
+            // Render the secondary slot as a div so the chip Box (a div) isn't
+            // nested inside a <p>, which would be invalid HTML.
+            secondaryTypographyProps={{ component: "div" }}
           />
           <IconButton
             aria-label={playing ? "pause" : "play"}

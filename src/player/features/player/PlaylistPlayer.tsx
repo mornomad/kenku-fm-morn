@@ -275,7 +275,11 @@ function Time({ onPlaylistSeek }: Pick<PlaylistPlayerProps, "onPlaylistSeek">) {
   // Commit the time value when letting go of the slider
   function handleTimeChange(_: Event, value: number | number[]) {
     setTimeOverride(null);
-    onPlaylistSeek(value as number);
+    // The slider can hand back a non-finite value when duration is 0 (track not
+    // loaded yet); ignore those so we never seek to NaN.
+    if (typeof value === "number" && Number.isFinite(value)) {
+      onPlaylistSeek(value);
+    }
   }
 
   const time = timeOverride === null ? playback?.progress || 0 : timeOverride;
@@ -290,8 +294,12 @@ function Time({ onPlaylistSeek }: Pick<PlaylistPlayerProps, "onPlaylistSeek">) {
         min={0}
         step={1}
         max={duration}
-        disabled={!Boolean(playback)}
-        onChange={(_, value) => setTimeOverride(value as number)}
+        disabled={!Boolean(playback) || duration <= 0}
+        onChange={(_, value) => {
+          if (typeof value === "number" && Number.isFinite(value)) {
+            setTimeOverride(value);
+          }
+        }}
         onChangeCommitted={handleTimeChange}
       />
       <Box

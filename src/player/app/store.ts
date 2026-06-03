@@ -7,6 +7,7 @@ import soundboardPlaybackReducer from "../features/soundboards/soundboardPlaybac
 import {
   persistStore,
   persistReducer,
+  createMigrate,
   FLUSH,
   REHYDRATE,
   PAUSE,
@@ -15,6 +16,31 @@ import {
   REGISTER,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
+
+// Runs when a saved store from an older version is loaded. Version 2 introduces
+// tags: every existing track needs a `tagIds` array and the playlists slice
+// needs an empty `tags` map. We type the state as `any` here because it is
+// whatever shape was persisted before this code existed.
+const migrations = {
+  2: (state: any) => {
+    if (!state?.playlists) {
+      return state;
+    }
+    const oldTracks = state.playlists.tracks ?? {};
+    const tracks: Record<string, any> = {};
+    for (const [id, track] of Object.entries(oldTracks)) {
+      tracks[id] = { ...(track as object), tagIds: [] };
+    }
+    return {
+      ...state,
+      playlists: {
+        ...state.playlists,
+        tracks,
+        tags: state.playlists.tags ?? { byId: {}, allIds: [] },
+      },
+    };
+  },
+};
 
 const playbackPersistConfig = {
   key: "playback",
@@ -35,9 +61,10 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
   key: "player",
-  version: 1,
+  version: 2,
   storage,
   whitelist: ["playlists", "soundboards"],
+  migrate: createMigrate(migrations, { debug: false }),
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
