@@ -4,6 +4,7 @@ import soundboardsReducer from "../features/soundboards/soundboardsSlice";
 import uisettingsReducer from "../common/UISettingsSlice";
 import playlsitPlaybackReducer from "../features/playlists/playlistPlaybackSlice";
 import soundboardPlaybackReducer from "../features/soundboards/soundboardPlaybackSlice";
+import settingsReducer from "../features/settings/settingsSlice";
 
 import {
   persistStore,
@@ -45,15 +46,25 @@ const migrations = {
     return {
       ...state,
       uisettings: state.uisettings ?? {
-        byName: {},
-        allSettings: [
+        byName: {
+          gridmode: { name: 'gridmode', value: 'normal'},
+          xscolumnsnumber: { name: 'xscolumnsnumber', value: '6'},
+          smcolumnsnumber: { name: 'smcolumnsnumber', value: '4'},
+          mdcolumnsnumber: { name: 'mdcolumnsnumber', value: '3'},
+          listitemheight: { name: 'listitemheight', value: '200px'},
+          containerwidth: { name: 'containerwidth', value: 'fixed'}
+        },
+        allsettings: [
           { name: 'gridmode', value: 'normal'},
+          { name: 'xscolumnsnumber', value: '6'},
+          { name: 'smcolumnsnumber', value: '4'},
+          { name: 'mdcolumnsnumber', value: '3'},
+          { name: 'listitemheight', value: '200px'},
           { name: 'containerwidth', value: 'fixed'}
         ]
       }
     };
   }
-
 };
 
 const playbackPersistConfig = {
@@ -72,13 +83,14 @@ const rootReducer = combineReducers({
     playlsitPlaybackReducer
   ),
   soundboardPlayback: soundboardPlaybackReducer,
+  settings: settingsReducer,
 });
 
 const persistConfig = {
   key: "player",
   version: 3,
   storage,
-  whitelist: ["playlists", "soundboards", "uisettings"],
+  whitelist: ["playlists", "soundboards", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),
 };
 

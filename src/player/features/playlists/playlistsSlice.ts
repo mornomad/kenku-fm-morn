@@ -7,6 +7,10 @@ export interface Track {
   // Ids of the tags applied to this track. They point into the `tags` map
   // below — the track never stores tag names or colors directly, only the ids.
   tagIds: string[];
+  // Optional custom cover image (a kenku-media:// or http URL). When unset, the
+  // UI derives the cover from the file's embedded art. Optional, so existing
+  // tracks and the two creation sites don't need to set it.
+  thumbnail?: string;
 }
 
 // A tag is its own entity with a stable id. The id never changes, so a track's
@@ -22,6 +26,9 @@ export interface Playlist {
   background: string;
   title: string;
   id: string;
+  // Tags automatically applied to tracks added to this playlist. Optional, so
+  // existing playlists and creation sites don't need to set it.
+  defaultTagIds?: string[];
 }
 
 export interface PlaylistsState {
@@ -81,19 +88,28 @@ export const playlistsSlice = createSlice({
       action: PayloadAction<{ track: Track; playlistId: string }>
     ) => {
       const { track, playlistId } = action.payload;
-      state.playlists.byId[playlistId].tracks.unshift(track.id);
-      state.tracks[track.id] = track;
+      const playlist = state.playlists.byId[playlistId];
+      playlist.tracks.unshift(track.id);
+      // Apply the playlist's default tags to the new track (deduped).
+      const defaults = playlist.defaultTagIds ?? [];
+      state.tracks[track.id] = {
+        ...track,
+        tagIds: Array.from(new Set([...track.tagIds, ...defaults])),
+      };
     },
     addTracks: (
       state,
       action: PayloadAction<{ tracks: Track[]; playlistId: string }>
     ) => {
       const { tracks, playlistId } = action.payload;
-      state.playlists.byId[playlistId].tracks.unshift(
-        ...tracks.map((track) => track.id)
-      );
+      const playlist = state.playlists.byId[playlistId];
+      playlist.tracks.unshift(...tracks.map((track) => track.id));
+      const defaults = playlist.defaultTagIds ?? [];
       for (let track of tracks) {
-        state.tracks[track.id] = track;
+        state.tracks[track.id] = {
+          ...track,
+          tagIds: Array.from(new Set([...track.tagIds, ...defaults])),
+        };
       }
     },
     removeTrack: (
@@ -138,6 +154,87 @@ export const playlistsSlice = createSlice({
       playlist.tracks.splice(oldIndex, 1);
       playlist.tracks.splice(newIndex, 0, action.payload.active);
     },
+    // Relocate a track to a different playlist. The Track entry in the global
+    // map is untouched — we just move its id from one playlist's list to
+    // another's, so there's no duplication.
+    moveTrackToPlaylist: (
+      state,
+      action: PayloadAction<{
+        trackId: string;
+        fromPlaylistId: string;
+        toPlaylistId: string;
+      }>
+    ) => {
+      const { trackId, fromPlaylistId, toPlaylistId } = action.payload;
+      if (fromPlaylistId === toPlaylistId) return;
+      const from = state.playlists.byId[fromPlaylistId];
+      const to = state.playlists.byId[toPlaylistId];
+      if (!from || !to) return;
+      from.tracks = from.tracks.filter((id) => id !== trackId);
+      if (!to.tracks.includes(trackId)) {
+        to.tracks.unshift(trackId);
+      }
+    },
+    // Move several tracks to another playlist at once (bulk). Like
+    // moveTrackToPlaylist but for a set of ids — global map untouched.
+    moveTracksToPlaylist: (
+      state,
+      action: PayloadAction<{
+        trackIds: string[];
+        fromPlaylistId: string;
+        toPlaylistId: string;
+      }>
+    ) => {
+      const { trackIds, fromPlaylistId, toPlaylistId } = action.payload;
+      if (fromPlaylistId === toPlaylistId) return;
+      const from = state.playlists.byId[fromPlaylistId];
+      const to = state.playlists.byId[toPlaylistId];
+      if (!from || !to) return;
+      const moving = new Set(trackIds);
+      from.tracks = from.tracks.filter((id) => !moving.has(id));
+      const toAdd = trackIds.filter((id) => !to.tracks.includes(id));
+      to.tracks.unshift(...toAdd);
+    },
+    // Duplicate a track into another playlist as an independent copy (new id),
+    // so editing one doesn't affect the other. The caller supplies the new id.
+    copyTrackToPlaylist: (
+      state,
+      action: PayloadAction<{
+        trackId: string;
+        toPlaylistId: string;
+        newTrackId: string;
+      }>
+    ) => {
+      const { trackId, toPlaylistId, newTrackId } = action.payload;
+      const source = state.tracks[trackId];
+      const to = state.playlists.byId[toPlaylistId];
+      if (!source || !to) return;
+      state.tracks[newTrackId] = {
+        ...source,
+        id: newTrackId,
+        tagIds: [...source.tagIds],
+      };
+      to.tracks.unshift(newTrackId);
+    },
+    // Add and/or remove a set of tags across many tracks at once (bulk edit).
+    tagTracks: (
+      state,
+      action: PayloadAction<{
+        trackIds: string[];
+        addTagIds: string[];
+        removeTagIds: string[];
+      }>
+    ) => {
+      const { trackIds, addTagIds, removeTagIds } = action.payload;
+      for (const id of trackIds) {
+        const track = state.tracks[id];
+        if (!track) continue;
+        const next = new Set(track.tagIds);
+        for (const tagId of addTagIds) next.add(tagId);
+        for (const tagId of removeTagIds) next.delete(tagId);
+        track.tagIds = Array.from(next);
+      }
+    },
     addTag: (state, action: PayloadAction<Tag>) => {
       state.tags.byId[action.payload.id] = action.payload;
       state.tags.allIds.push(action.payload.id);
@@ -163,6 +260,14 @@ export const playlistsSlice = createSlice({
           track.tagIds = track.tagIds.filter((id) => id !== tagId);
         }
       }
+      // Also drop it from any playlist's default tags.
+      for (const playlist of Object.values(state.playlists.byId)) {
+        if (playlist.defaultTagIds?.includes(tagId)) {
+          playlist.defaultTagIds = playlist.defaultTagIds.filter(
+            (id) => id !== tagId
+          );
+        }
+      }
     },
   },
 });
@@ -177,6 +282,10 @@ export const {
   removeTrack,
   editTrack,
   moveTrack,
+  moveTrackToPlaylist,
+  moveTracksToPlaylist,
+  copyTrackToPlaylist,
+  tagTracks,
   addTag,
   editTag,
   removeTag,
