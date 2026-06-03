@@ -138,6 +138,48 @@ export const playlistsSlice = createSlice({
       playlist.tracks.splice(oldIndex, 1);
       playlist.tracks.splice(newIndex, 0, action.payload.active);
     },
+    // Relocate a track to a different playlist. The Track entry in the global
+    // map is untouched — we just move its id from one playlist's list to
+    // another's, so there's no duplication.
+    moveTrackToPlaylist: (
+      state,
+      action: PayloadAction<{
+        trackId: string;
+        fromPlaylistId: string;
+        toPlaylistId: string;
+      }>
+    ) => {
+      const { trackId, fromPlaylistId, toPlaylistId } = action.payload;
+      if (fromPlaylistId === toPlaylistId) return;
+      const from = state.playlists.byId[fromPlaylistId];
+      const to = state.playlists.byId[toPlaylistId];
+      if (!from || !to) return;
+      from.tracks = from.tracks.filter((id) => id !== trackId);
+      if (!to.tracks.includes(trackId)) {
+        to.tracks.unshift(trackId);
+      }
+    },
+    // Duplicate a track into another playlist as an independent copy (new id),
+    // so editing one doesn't affect the other. The caller supplies the new id.
+    copyTrackToPlaylist: (
+      state,
+      action: PayloadAction<{
+        trackId: string;
+        toPlaylistId: string;
+        newTrackId: string;
+      }>
+    ) => {
+      const { trackId, toPlaylistId, newTrackId } = action.payload;
+      const source = state.tracks[trackId];
+      const to = state.playlists.byId[toPlaylistId];
+      if (!source || !to) return;
+      state.tracks[newTrackId] = {
+        ...source,
+        id: newTrackId,
+        tagIds: [...source.tagIds],
+      };
+      to.tracks.unshift(newTrackId);
+    },
     addTag: (state, action: PayloadAction<Tag>) => {
       state.tags.byId[action.payload.id] = action.payload;
       state.tags.allIds.push(action.payload.id);
@@ -177,6 +219,8 @@ export const {
   removeTrack,
   editTrack,
   moveTrack,
+  moveTrackToPlaylist,
+  copyTrackToPlaylist,
   addTag,
   editTag,
   removeTag,

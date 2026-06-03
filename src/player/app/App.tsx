@@ -14,6 +14,8 @@ import { PlaylistPlaybackSync } from "../features/playlists/PlaylistPlaybackSync
 import { Playlists } from "../features/playlists/Playlists";
 import { Playlist } from "../features/playlists/Playlist";
 import { Search } from "../features/search/Search";
+import { ManageTags } from "../features/tags/ManageTags";
+import { Settings } from "../features/settings/Settings";
 
 import "../../renderer/app/App.css";
 import { Home } from "../features/home/Home";
@@ -59,6 +61,8 @@ export function App() {
           element={<Playlists onPlay={playlist.play} />}
         />
         <Route path="search" element={<Search onPlay={playlist.play} />} />
+        <Route path="tags" element={<ManageTags />} />
+        <Route path="settings" element={<Settings />} />
         <Route
           path="playlists/:playlistId"
           element={<Playlist onPlay={playlist.play} />}

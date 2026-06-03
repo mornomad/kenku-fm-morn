@@ -12,7 +12,7 @@ import Chip from "@mui/material/Chip";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { addTag, editTrack, Tag, Track } from "./playlistsSlice";
-import { nextTagColor } from "./tagColors";
+import { nextTagColor, tagTextColor } from "./tagColors";
 import { AudioSelector } from "../../common/AudioSelector";
 
 type TrackSettingsProps = {
@@ -157,7 +157,10 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
                     {...tagProps}
                     sx={
                       tag
-                        ? { backgroundColor: tag.color, color: "rgba(0,0,0,0.87)" }
+                        ? {
+                            backgroundColor: tag.color,
+                            color: tagTextColor(tag.color),
+                          }
                         : undefined
                     }
                   />

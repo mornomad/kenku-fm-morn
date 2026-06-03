@@ -7,15 +7,26 @@ import Pause from "@mui/icons-material/PauseRounded";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
-import Chip from "@mui/material/Chip";
 
 import MoreVert from "@mui/icons-material/MoreVertRounded";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
-import { Track, removeTrack, Playlist, Tag } from "./playlistsSlice";
+import { useNavigate } from "react-router-dom";
+import { v4 as uuid } from "uuid";
+
+import {
+  Track,
+  removeTrack,
+  moveTrackToPlaylist,
+  copyTrackToPlaylist,
+  Playlist,
+  Tag,
+} from "./playlistsSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { TrackSettings } from "./TrackSettings";
+import { TagChip } from "./TagChip";
+import { PlaylistPickerDialog } from "./PlaylistPickerDialog";
 import { RootState } from "../../app/store";
 import {
   playPause,
@@ -46,6 +57,7 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
       .filter((tag): tag is Tag => Boolean(tag)),
   );
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -66,6 +78,29 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
   function handleCopyID() {
     navigator.clipboard.writeText(track.id);
     handleMenuClose();
+  }
+
+  // null = closed; otherwise which action the playlist picker is for.
+  const [picker, setPicker] = useState<null | "move" | "copy">(null);
+
+  function handlePickPlaylist(toPlaylistId: string) {
+    if (picker === "move") {
+      dispatch(
+        moveTrackToPlaylist({
+          trackId: track.id,
+          fromPlaylistId: playlist.id,
+          toPlaylistId,
+        }),
+      );
+    } else if (picker === "copy") {
+      dispatch(
+        copyTrackToPlaylist({
+          trackId: track.id,
+          toPlaylistId,
+          newTrackId: uuid(),
+        }),
+      );
+    }
   }
 
   function handleDelete() {
@@ -118,15 +153,14 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
                   }}
                 >
                   {tags.map((tag) => (
-                    <Chip
+                    <TagChip
                       key={tag.id}
-                      label={tag.name}
-                      size="small"
-                      sx={{
-                        height: 18,
-                        fontSize: 11,
-                        backgroundColor: tag.color,
-                        color: "rgba(0,0,0,0.87)",
+                      tag={tag}
+                      sx={{ height: 18, fontSize: 11 }}
+                      onClick={(event) => {
+                        // Don't let the click also hit the surrounding row.
+                        event.stopPropagation();
+                        navigate(`/search?tag=${tag.id}`);
                       }}
                     />
                   ))}
@@ -166,9 +200,32 @@ export function TrackItem({ track, playlist, onPlay }: TrackItemProps) {
         slotProps={{ list: { "aria-labelledby": "more-button" } }}
       >
         <MenuItem onClick={handleEdit}>Edit</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setPicker("move");
+            handleMenuClose();
+          }}
+        >
+          Move to playlist
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setPicker("copy");
+            handleMenuClose();
+          }}
+        >
+          Copy to playlist
+        </MenuItem>
         <MenuItem onClick={handleCopyID}>Copy ID</MenuItem>
         <MenuItem onClick={handleDelete}>Delete</MenuItem>
       </Menu>
+      <PlaylistPickerDialog
+        open={picker !== null}
+        title={picker === "copy" ? "Copy to playlist" : "Move to playlist"}
+        excludePlaylistId={playlist.id}
+        onPick={handlePickPlaylist}
+        onClose={() => setPicker(null)}
+      />
       <TrackSettings
         track={track}
         open={settingsOpen}

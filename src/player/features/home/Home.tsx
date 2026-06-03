@@ -8,6 +8,8 @@ import {
 
 import AddIcon from "@mui/icons-material/AddCircleRounded";
 import SearchIcon from "@mui/icons-material/SearchRounded";
+import LocalOffer from "@mui/icons-material/LocalOfferRounded";
+import SettingsIcon from "@mui/icons-material/SettingsRounded";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -73,20 +75,49 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
         mb: "248px",
       }}
     >
-      <Paper
-        onClick={() => navigate("/search")}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          px: 2,
-          py: 1.5,
-          cursor: "pointer",
-        }}
-      >
-        <SearchIcon />
-        <Typography color="text.secondary">Search tracks by tag…</Typography>
-      </Paper>
+      <Stack direction="row" gap={1} alignItems="stretch">
+        <Paper
+          onClick={() => navigate("/search")}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            px: 2,
+            py: 1.5,
+            cursor: "pointer",
+            flexGrow: 1,
+          }}
+        >
+          <SearchIcon />
+          <Typography color="text.secondary">Search tracks by tag…</Typography>
+        </Paper>
+        <Tooltip title="Manage tags">
+          <Paper
+            onClick={() => navigate("/tags")}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              px: 2,
+              cursor: "pointer",
+            }}
+          >
+            <LocalOffer />
+          </Paper>
+        </Tooltip>
+        <Tooltip title="Settings">
+          <Paper
+            onClick={() => navigate("/settings")}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              px: 2,
+              cursor: "pointer",
+            }}
+          >
+            <SettingsIcon />
+          </Paper>
+        </Tooltip>
+      </Stack>
       <Card>
         <CardContent>
           <Stack
