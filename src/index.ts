@@ -5,6 +5,7 @@ import {
   app,
   BrowserWindow,
   components,
+  dialog,
   protocol,
   session,
   shell,
@@ -14,6 +15,7 @@ import {
 import "./menu";
 import icon from "./assets/icon.png";
 import { getMalformedUserAgent, getUserAgent } from "./main/userAgent";
+import { getEmbeddedThumbnail } from "./main/thumbnails";
 import { SessionManager } from "./main/managers/SessionManager";
 import { runAutoUpdate } from "./autoUpdate";
 import { getSavedBounds, saveWindowBounds } from "./bounds";
@@ -162,9 +164,24 @@ if (!hasSingleInstanceLock) {
     // only treats a source as seekable when the server answers ranges with a
     // 206 response and an Accept-Ranges header.
     protocol.handle("kenku-media", async (request) => {
-      const { pathname } = new URL(request.url);
+      const url = new URL(request.url);
       // The absolute path is a single encoded segment after the host.
-      const filePath = decodeURIComponent(pathname.replace(/^\//, ""));
+      const filePath = decodeURIComponent(url.pathname.replace(/^\//, ""));
+
+      // kenku-media://thumb/<audio path> → the file's embedded cover art, or
+      // 404 if it has none (the UI then shows a fallback icon).
+      if (url.host === "thumb") {
+        const thumb = await getEmbeddedThumbnail(filePath);
+        if (!thumb) {
+          return new Response("Not Found", { status: 404 });
+        }
+        // Wrap in a plain Uint8Array so it's accepted as a Response body
+        // (Node's Buffer type doesn't line up with the DOM BodyInit type).
+        return new Response(new Uint8Array(thumb.data), {
+          status: 200,
+          headers: { "Content-Type": thumb.mime },
+        });
+      }
 
       let size: number;
       try {
@@ -265,6 +282,22 @@ if (!hasSingleInstanceLock) {
 
   ipcMain.on("GET_PLATFORM", (event) => {
     event.returnValue = os.platform();
+  });
+
+  ipcMain.handle("PLAYER_SHOW_OPEN_IMAGE_DIALOG", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile"],
+      filters: [
+        {
+          name: "Images",
+          extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"],
+        },
+      ],
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return undefined;
+    }
+    return result.filePaths[0];
   });
 
   ipcMain.handle("CLEAR_CACHE", async () => {

@@ -35,12 +35,18 @@ type PlaylistTracksProps = {
   items: Track[];
   playlist: Playlist;
   onPlay: (id: string) => void;
+  selectionMode?: boolean;
+  selectedIds?: string[];
+  onToggleSelected?: (id: string) => void;
 };
 
 export function PlaylistTracks({
   items,
   playlist,
   onPlay,
+  selectionMode,
+  selectedIds,
+  onToggleSelected,
 }: PlaylistTracksProps) {
   const dispatch = useDispatch();
 
@@ -120,7 +126,14 @@ export function PlaylistTracks({
           <SortableContext items={items} strategy={verticalListSortingStrategy}>
             {items.map((item) => (
               <SortableItem key={item.id} id={item.id}>
-                <TrackItem track={item} playlist={playlist} onPlay={onPlay} />
+                <TrackItem
+                  track={item}
+                  playlist={playlist}
+                  onPlay={onPlay}
+                  selectionMode={selectionMode}
+                  selected={selectedIds?.includes(item.id)}
+                  onToggleSelected={onToggleSelected}
+                />
               </SortableItem>
             ))}
             <DragOverlay>

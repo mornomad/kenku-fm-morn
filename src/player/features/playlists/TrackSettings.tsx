@@ -1,5 +1,6 @@
 import React from "react";
 import { v4 as uuid } from "uuid";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
@@ -12,16 +13,26 @@ import Chip from "@mui/material/Chip";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { addTag, editTrack, Tag, Track } from "./playlistsSlice";
-import { nextTagColor } from "./tagColors";
+import { nextTagColor, tagTextColor } from "./tagColors";
+import { TrackThumbnail } from "./TrackThumbnail";
+import { INHERIT_PLAYLIST } from "./thumbnailUrl";
 import { AudioSelector } from "../../common/AudioSelector";
+import { encodeFilePath } from "../../../renderer/common/drop";
 
 type TrackSettingsProps = {
   track: Track;
+  // The track's playlist image, used for the cover preview / fallback.
+  playlistImage?: string;
   open: boolean;
   onClose: () => void;
 };
 
-export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
+export function TrackSettings({
+  track,
+  playlistImage,
+  open,
+  onClose,
+}: TrackSettingsProps) {
   const dispatch = useDispatch();
 
   // The central tag store. `byId` resolves an id to a Tag; `allIds` gives the
@@ -96,6 +107,15 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
     onClose();
   }
 
+  // Pick a custom cover image via the native file dialog (in the main process)
+  // — overrides the embedded art for this track.
+  async function handleChooseImage() {
+    const path = await window.player.showOpenImageDialog();
+    if (path) {
+      dispatch(editTrack({ id: track.id, thumbnail: encodeFilePath(path) }));
+    }
+  }
+
   return (
     <Dialog
       open={open}
@@ -157,7 +177,10 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
                     {...tagProps}
                     sx={
                       tag
-                        ? { backgroundColor: tag.color, color: "rgba(0,0,0,0.87)" }
+                        ? {
+                            backgroundColor: tag.color,
+                            color: tagTextColor(tag.color),
+                          }
                         : undefined
                     }
                   />
@@ -175,6 +198,51 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
               />
             )}
           />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
+            <TrackThumbnail
+              track={track}
+              playlistImage={playlistImage}
+              size={56}
+            />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              {/* type="button" so these don't submit the dialog form. */}
+              <Button
+                type="button"
+                size="small"
+                variant="outlined"
+                onClick={handleChooseImage}
+              >
+                Set custom image
+              </Button>
+              {playlistImage && track.thumbnail !== INHERIT_PLAYLIST ? (
+                <Button
+                  type="button"
+                  size="small"
+                  onClick={() =>
+                    dispatch(
+                      editTrack({
+                        id: track.id,
+                        thumbnail: INHERIT_PLAYLIST,
+                      }),
+                    )
+                  }
+                >
+                  Use playlist image
+                </Button>
+              ) : null}
+              {track.thumbnail ? (
+                <Button
+                  type="button"
+                  size="small"
+                  onClick={() =>
+                    dispatch(editTrack({ id: track.id, thumbnail: "" }))
+                  }
+                >
+                  Reset to default
+                </Button>
+              ) : null}
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button type="submit">Done</Button>

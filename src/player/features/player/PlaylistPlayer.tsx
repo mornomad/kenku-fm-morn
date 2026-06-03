@@ -18,8 +18,14 @@ import Next from "@mui/icons-material/SkipNextRounded";
 import Previous from "@mui/icons-material/SkipPreviousRounded";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
+import { useLocation, useNavigate } from "react-router-dom";
+
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
+import { Tag } from "../playlists/playlistsSlice";
+import { TagChip } from "../playlists/TagChip";
+import { TrackThumbnail } from "../playlists/TrackThumbnail";
+import { playlistImageUrl } from "../playlists/playlistImage";
 import {
   adjustVolume,
   playPause,
@@ -81,11 +87,50 @@ type PlaylistPlayerProps = {
 };
 
 function Title() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const playlists = useSelector((state: RootState) => state.playlists);
   const queue = useSelector((state: RootState) => state.playlistPlayback.queue);
   const track = useSelector((state: RootState) => state.playlistPlayback.track);
+  const tagsById = useSelector(
+    (state: RootState) => state.playlists.tags.byId,
+  );
+  // Read the tag ids from the LIVE track in the store (not the frozen copy in
+  // playlistPlayback.track), so editing tags updates the player immediately
+  // instead of only after the track is replayed.
+  const liveTagIds = useSelector((state: RootState) =>
+    track ? state.playlists.tracks[track.id]?.tagIds : undefined,
+  );
+  // The live track in the store (for the cover art, kept up to date if the
+  // user changes the thumbnail while it's playing).
+  const liveTrack = useSelector((state: RootState) =>
+    track ? state.playlists.tracks[track.id] : undefined,
+  );
   const noTrack = track?.title === undefined;
   const large = useMediaQuery(`(min-width: ${minWidthForLargeContext}px)`);
+
+  // Resolve the current track's tags. useMemo so this only recomputes when the
+  // tag ids or the tag definitions change (not on every playback tick).
+  const tags = React.useMemo(
+    () =>
+      (liveTagIds ?? track?.tagIds ?? [])
+        .map((id) => tagsById[id])
+        .filter((tag): tag is Tag => Boolean(tag)),
+    [liveTagIds, track, tagsById],
+  );
+
+  // Jump to the playlist the current track is playing from. When we're already
+  // on a playlist page, replace the history entry instead of pushing — so
+  // repeated jumps between playlists don't stack up and trap the back button.
+  function goToPlaylist() {
+    if (queue?.playlistId) {
+      const onPlaylistPage = location.pathname.startsWith("/playlists/");
+      navigate(`/playlists/${queue.playlistId}`, { replace: onPlaylistPage });
+    }
+  }
+  const clickableSx = noTrack
+    ? undefined
+    : { cursor: "pointer", "&:hover": { textDecoration: "underline" } };
 
   return (
     <Box
@@ -93,26 +138,76 @@ function Title() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        gap: 1.5,
         width: large ? "30%" : "100%",
-        flexDirection: "column",
       }}
     >
-      <Typography
-        variant="body2"
-        sx={{ width: "100%", textAlign: large ? undefined : "center" }}
-        noWrap
-        gutterBottom
+      {liveTrack && (
+        <TrackThumbnail
+          track={liveTrack}
+          size={44}
+          playlistImage={playlistImageUrl(
+            queue ? playlists.playlists.byId[queue.playlistId] : undefined,
+          )}
+        />
+      )}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          flexGrow: 1,
+        }}
       >
-        {noTrack ? "" : track.title}
-      </Typography>
-      <Typography
-        variant="caption"
-        color="rgba(255, 255, 255, 0.8)"
-        sx={{ width: "100%", textAlign: large ? undefined : "center" }}
-        noWrap
-      >
-        {noTrack ? "" : playlists.playlists.byId[queue.playlistId]?.title}
-      </Typography>
+        <Typography
+          variant="body2"
+          onClick={noTrack ? undefined : goToPlaylist}
+          title={noTrack ? undefined : "Go to playlist"}
+          sx={{
+            width: "100%",
+            textAlign: large ? undefined : "center",
+            ...clickableSx,
+          }}
+          noWrap
+          gutterBottom
+        >
+          {noTrack ? "" : track.title}
+        </Typography>
+        <Typography
+          variant="caption"
+          color="rgba(255, 255, 255, 0.8)"
+          onClick={noTrack ? undefined : goToPlaylist}
+          sx={{
+            width: "100%",
+            textAlign: large ? undefined : "center",
+            ...clickableSx,
+          }}
+          noWrap
+        >
+          {noTrack ? "" : playlists.playlists.byId[queue.playlistId]?.title}
+        </Typography>
+        {!noTrack && tags.length > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 0.5,
+              mt: 0.5,
+              maxWidth: "100%",
+              justifyContent: large ? "flex-start" : "center",
+            }}
+          >
+            {tags.map((tag) => (
+              <TagChip
+                key={tag.id}
+                tag={tag}
+                sx={{ height: 18, fontSize: 11 }}
+                onClick={() => navigate(`/search?tag=${tag.id}`)}
+              />
+            ))}
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }

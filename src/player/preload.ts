@@ -69,7 +69,12 @@ const api = {
   },
   getPathForFile: (file: File) => {
     return webUtils.getPathForFile(file);
-  } 
+  },
+  // Open a native file picker for an image and return its path (or undefined
+  // if cancelled). Used for setting a custom track thumbnail.
+  showOpenImageDialog: (): Promise<string | undefined> => {
+    return ipcRenderer.invoke("PLAYER_SHOW_OPEN_IMAGE_DIALOG");
+  },
 };
 
 declare global {
