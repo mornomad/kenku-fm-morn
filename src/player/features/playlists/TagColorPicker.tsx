@@ -26,7 +26,7 @@ export function TagColorPicker({ color, onChange, size = 24 }: TagColorPickerPro
         sx={{
           width: size,
           height: size,
-          borderRadius: "50%",
+          borderRadius: "6px",
           backgroundColor: color,
           border: "2px solid rgba(255,255,255,0.4)",
           cursor: "pointer",

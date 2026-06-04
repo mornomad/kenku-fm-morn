@@ -35,7 +35,7 @@ export function ColorPickerContent({
             sx={{
               width: 24,
               height: 24,
-              borderRadius: "50%",
+              borderRadius: "6px",
               backgroundColor: swatch,
               border:
                 swatch === value ? "2px solid #fff" : "2px solid transparent",
