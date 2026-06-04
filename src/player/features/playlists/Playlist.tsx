@@ -160,7 +160,7 @@ export function Playlist({ onPlay }: PlaylistProps) {
           padding: "0px !important",
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: "calc(100vh - 120px)"
         }}
         {...containerListeners}
       >
