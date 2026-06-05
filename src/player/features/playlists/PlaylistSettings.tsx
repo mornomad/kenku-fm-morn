@@ -1,4 +1,5 @@
 import React from "react";
+import { v4 as uuid } from "uuid";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
@@ -6,10 +7,12 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Autocomplete from "@mui/material/Autocomplete";
+import Chip from "@mui/material/Chip";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
-import { editPlaylist, Playlist, Tag } from "./playlistsSlice";
+import { addTag, editPlaylist, Playlist, Tag } from "./playlistsSlice";
+import { nextTagColor } from "./tagColors";
 import { TagChip } from "./TagChip";
 import { ImageSelector } from "../../common/ImageSelector";
 
@@ -41,13 +44,38 @@ export function PlaylistSettings({
     dispatch(editPlaylist({ id: playlist.id, title: event.target.value }));
   }
 
-  function handleDefaultTagsChange(_event: React.SyntheticEvent, value: Tag[]) {
-    dispatch(
-      editPlaylist({
-        id: playlist.id,
-        defaultTagIds: value.map((tag) => tag.id),
-      }),
-    );
+  function handleDefaultTagsChange(
+    _event: React.SyntheticEvent,
+    value: (Tag | string)[],
+  ) {
+    // Like the track tag editor: turn each entry into a tag id, creating new
+    // tags for any freshly-typed names (freeSolo strings).
+    const tagIds: string[] = [];
+    let created = 0;
+    for (const item of value) {
+      if (typeof item === "string") {
+        const name = item.trim();
+        if (!name) continue;
+        const existing = allTags.find(
+          (tag) => tag.name.toLowerCase() === name.toLowerCase(),
+        );
+        if (existing) {
+          if (!tagIds.includes(existing.id)) tagIds.push(existing.id);
+        } else {
+          const tag: Tag = {
+            id: uuid(),
+            name,
+            color: nextTagColor(tagAllIds.length + created),
+          };
+          dispatch(addTag(tag));
+          tagIds.push(tag.id);
+          created += 1;
+        }
+      } else if (!tagIds.includes(item.id)) {
+        tagIds.push(item.id);
+      }
+    }
+    dispatch(editPlaylist({ id: playlist.id, defaultTagIds: tagIds }));
   }
 
   function handleBackgroundChange(background: string) {
@@ -79,23 +107,37 @@ export function PlaylistSettings({
           />
           <Autocomplete
             multiple
+            freeSolo
             options={allTags}
             value={defaultTags}
             onChange={handleDefaultTagsChange}
-            getOptionLabel={(option) => option.name}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
+            getOptionLabel={(option) =>
+              typeof option === "string" ? option : option.name
+            }
+            isOptionEqualToValue={(option, value) =>
+              typeof option !== "string" &&
+              typeof value !== "string" &&
+              option.id === value.id
+            }
             filterSelectedOptions
             renderTags={(value, getTagProps) =>
-              value.map((tag, index) => {
+              value.map((option, index) => {
                 const { key } = getTagProps({ index });
+                if (typeof option === "string") {
+                  return <Chip key={key} label={option} />;
+                }
                 return (
                   <TagChip
                     key={key}
-                    tag={tag}
+                    tag={option}
                     onDelete={() =>
-                      handleDefaultTagsChange(
-                        {} as React.SyntheticEvent,
-                        value.filter((t) => t.id !== tag.id),
+                      dispatch(
+                        editPlaylist({
+                          id: playlist.id,
+                          defaultTagIds: (playlist.defaultTagIds ?? []).filter(
+                            (id) => id !== option.id,
+                          ),
+                        }),
                       )
                     }
                   />

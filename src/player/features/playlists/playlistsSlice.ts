@@ -122,6 +122,20 @@ export const playlistsSlice = createSlice({
       ].tracks.filter((id) => id !== trackId);
       delete state.tracks[trackId];
     },
+    removeTracks: (
+      state,
+      action: PayloadAction<{ trackIds: string[]; playlistId: string }>
+    ) => {
+      const { trackIds, playlistId } = action.payload;
+      const remove = new Set(trackIds);
+      const playlist = state.playlists.byId[playlistId];
+      if (playlist) {
+        playlist.tracks = playlist.tracks.filter((id) => !remove.has(id));
+      }
+      for (const id of trackIds) {
+        delete state.tracks[id];
+      }
+    },
     editTrack: (state, action: PayloadAction<Partial<Track>>) => {
       if (!action.payload.id) {
         throw Error("Id needed in editTrack payload");
@@ -280,6 +294,7 @@ export const {
   addTrack,
   addTracks,
   removeTrack,
+  removeTracks,
   editTrack,
   moveTrack,
   moveTrackToPlaylist,

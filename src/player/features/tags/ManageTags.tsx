@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { v4 as uuid } from "uuid";
 
 import Back from "@mui/icons-material/ChevronLeftRounded";
-import Delete from "@mui/icons-material/DeleteRounded";
+import Close from "@mui/icons-material/CloseRounded";
 import Add from "@mui/icons-material/AddRounded";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -117,7 +117,7 @@ export function ManageTags() {
                 secondaryAction={
                   <Tooltip title="Delete tag">
                     <IconButton edge="end" onClick={() => handleDelete(tag)}>
-                      <Delete />
+                      <Close />
                     </IconButton>
                   </Tooltip>
                 }

@@ -8,6 +8,8 @@ import MoreVert from "@mui/icons-material/MoreVertRounded";
 import Checklist from "@mui/icons-material/ChecklistRounded";
 import LocalOffer from "@mui/icons-material/LocalOfferRounded";
 import Close from "@mui/icons-material/CloseRounded";
+import DriveFileMove from "@mui/icons-material/DriveFileMoveRounded";
+import DeleteIcon from "@mui/icons-material/DeleteRounded";
 import Backdrop from "@mui/material/Backdrop";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -22,12 +24,25 @@ import Typography from "@mui/material/Typography";
 import { RootState } from "../../app/store";
 import { backgrounds, isBackground } from "../../backgrounds";
 import { useFolderDrop } from "../../common/useFolderDrop";
-import { addTracksToQueueIfNeeded, startQueue } from "./playlistPlaybackSlice";
+import {
+  addTracksToQueueIfNeeded,
+  playPause,
+  removeTrackFromQueue,
+  startQueue,
+  stopTrack,
+} from "./playlistPlaybackSlice";
 import { PlaylistSettings } from "./PlaylistSettings";
-import { addTracks, removePlaylist, Track } from "./playlistsSlice";
+import {
+  addTracks,
+  moveTracksToPlaylist,
+  removePlaylist,
+  removeTracks,
+  Track,
+} from "./playlistsSlice";
 import { PlaylistTracks } from "./PlaylistTracks";
 import { TrackAdd } from "./TrackAdd";
 import { BulkTagDialog } from "./BulkTagDialog";
+import { PlaylistPickerDialog } from "./PlaylistPickerDialog";
 
 type PlaylistProps = {
   onPlay: (track: Track) => void;
@@ -47,6 +62,7 @@ export function Playlist({ onPlay }: PlaylistProps) {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkTagOpen, setBulkTagOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
 
   function toggleSelectionMode() {
     setSelectionMode((on) => !on);
@@ -56,6 +72,29 @@ export function Playlist({ onPlay }: PlaylistProps) {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+  }
+  const currentTrackId = useSelector(
+    (state: RootState) => state.playlistPlayback.track?.id,
+  );
+  function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    const ok = window.confirm(
+      `Delete ${selectedIds.length} track${
+        selectedIds.length === 1 ? "" : "s"
+      }? This can't be undone.`,
+    );
+    if (!ok) return;
+    // Stop playback if the playing track is being deleted.
+    if (currentTrackId && selectedIds.includes(currentTrackId)) {
+      dispatch(playPause(false));
+      dispatch(stopTrack());
+    }
+    for (const id of selectedIds) {
+      dispatch(removeTrackFromQueue({ trackId: id, playlistId: playlist.id }));
+    }
+    dispatch(removeTracks({ trackIds: selectedIds, playlistId: playlist.id }));
+    setSelectedIds([]);
+    setSelectionMode(false);
   }
 
   const items = playlist.tracks.map((id) => playlists.tracks[id]);
@@ -121,7 +160,7 @@ export function Playlist({ onPlay }: PlaylistProps) {
           padding: "0px !important",
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: "calc(100vh - 120px)"
         }}
         {...containerListeners}
       >
@@ -181,6 +220,26 @@ export function Playlist({ onPlay }: PlaylistProps) {
                       onClick={() => setBulkTagOpen(true)}
                     >
                       <LocalOffer />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Move selected to playlist">
+                  <span>
+                    <IconButton
+                      disabled={selectedIds.length === 0}
+                      onClick={() => setMoveOpen(true)}
+                    >
+                      <DriveFileMove />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Delete selected">
+                  <span>
+                    <IconButton
+                      disabled={selectedIds.length === 0}
+                      onClick={handleBulkDelete}
+                    >
+                      <DeleteIcon />
                     </IconButton>
                   </span>
                 </Tooltip>
@@ -254,6 +313,26 @@ export function Playlist({ onPlay }: PlaylistProps) {
         open={bulkTagOpen}
         trackIds={selectedIds}
         onClose={() => setBulkTagOpen(false)}
+      />
+      <PlaylistPickerDialog
+        open={moveOpen}
+        title={`Move ${selectedIds.length} track${
+          selectedIds.length === 1 ? "" : "s"
+        } to playlist`}
+        excludePlaylistId={playlist.id}
+        onPick={(toPlaylistId) => {
+          dispatch(
+            moveTracksToPlaylist({
+              trackIds: selectedIds,
+              fromPlaylistId: playlist.id,
+              toPlaylistId,
+            }),
+          );
+          // The moved tracks have left this playlist — exit selection.
+          setSelectedIds([]);
+          setSelectionMode(false);
+        }}
+        onClose={() => setMoveOpen(false)}
       />
     </>
   );
