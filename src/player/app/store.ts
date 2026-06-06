@@ -64,6 +64,31 @@ const migrations = {
         ]
       }
     };
+  },
+  4: (state: any) => {
+    return {
+      ...state,
+      uisettings: {
+        byName: {
+          displayuisettingsbar: { name: 'displayuisettingsbar', value: "true"},
+          gridmode: { name: 'gridmode', value: 'normal'},
+          xscolumnsnumber: { name: 'xscolumnsnumber', value: '6'},
+          smcolumnsnumber: { name: 'smcolumnsnumber', value: '4'},
+          mdcolumnsnumber: { name: 'mdcolumnsnumber', value: '3'},
+          listitemheight: { name: 'listitemheight', value: '200px'},
+          containerwidth: { name: 'containerwidth', value: 'fixed'}
+        },
+        allsettings: [
+          { name: 'displayuisettingsbar', value: "true"},
+          { name: 'gridmode', value: 'normal'},
+          { name: 'xscolumnsnumber', value: '6'},
+          { name: 'smcolumnsnumber', value: '4'},
+          { name: 'mdcolumnsnumber', value: '3'},
+          { name: 'listitemheight', value: '200px'},
+          { name: 'containerwidth', value: 'fixed'}
+        ]
+      }
+    };
   }
 };
 
@@ -88,7 +113,7 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
   key: "player",
-  version: 3,
+  version: 4,
   storage,
   whitelist: ["playlists", "soundboards", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),
