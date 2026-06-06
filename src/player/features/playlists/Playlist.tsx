@@ -52,6 +52,7 @@ export function Playlist({ onPlay }: PlaylistProps) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const playlists = useSelector((state: RootState) => state.playlists);
+  const uisettings = useSelector((state: RootState) => state.uisettings);
   const { playlistId } = useParams();
   const playlist = playlists.playlists.byId[playlistId];
 
@@ -105,6 +106,7 @@ export function Playlist({ onPlay }: PlaylistProps) {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
+
   function handleMenuClick(event: React.MouseEvent<HTMLButtonElement>) {
     setAnchorEl(event.currentTarget);
   }
@@ -160,7 +162,7 @@ export function Playlist({ onPlay }: PlaylistProps) {
           padding: "0px !important",
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: "calc(100vh - 120px)"
         }}
         {...containerListeners}
       >
@@ -169,7 +171,7 @@ export function Playlist({ onPlay }: PlaylistProps) {
             backgroundImage: `url("${image}")`,
             backgroundSize: "cover",
             position: "absolute",
-            top: 0,
+            top: uisettings.byName["displayuisettingsbar"].value == "true" ? 120 : 0,
             left: 0,
             right: 0,
             bottom: 0,
@@ -181,7 +183,7 @@ export function Playlist({ onPlay }: PlaylistProps) {
             backgroundImage:
               "linear-gradient(0deg, #ffffff44 30%,  #00000088 100%)",
             position: "absolute",
-            top: 0,
+            top: uisettings.byName["displayuisettingsbar"].value == "true" ? 120 : 0,
             left: 0,
             right: 0,
             bottom: 0,

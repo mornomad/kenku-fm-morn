@@ -12,6 +12,7 @@ export interface UISettingsState {
 
 const initialState: UISettingsState = {
   byName: {
+    displayuisettingsbar: { name: 'displayuisettingsbar', value: 'true'},
     gridmode: { name: 'gridmode', value: 'normal'},
     xscolumnsnumber: { name: 'xscolumnsnumber', value: '6'},
     smcolumnsnumber: { name: 'smcolumnsnumber', value: '4'},
@@ -20,6 +21,7 @@ const initialState: UISettingsState = {
     containerwidth: { name: 'containerwidth', value: 'fixed'}
   },
   allsettings: [
+    { name: 'displayuisettingsbar', value: 'true'},
     { name: 'gridmode', value: 'normal'},
     { name: 'xscolumnsnumber', value: '6'},
     { name: 'smcolumnsnumber', value: '4'},

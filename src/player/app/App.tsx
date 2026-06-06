@@ -16,7 +16,7 @@ import { Playlist } from "../features/playlists/Playlist";
 import { Search } from "../features/search/Search";
 import { ManageTags } from "../features/tags/ManageTags";
 import { Settings } from "../features/settings/Settings";
-import { UISettings } from "../common/UISettings";
+import { UISettingsBar } from "../common/UISettingsBar";
 
 import "../../renderer/app/App.css";
 import { Home } from "../features/home/Home";
@@ -50,7 +50,7 @@ export function App() {
   return (
     <>
       <WallPaper />
-      <UISettings />
+      <UISettingsBar />
       <Routes>
         <Route
           path="/"

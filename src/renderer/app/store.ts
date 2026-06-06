@@ -6,6 +6,7 @@ import bookmarksReducer from "../features/bookmarks/bookmarksSlice";
 import tabsReducer from "../features/tabs/tabsSlice";
 import playerReducer from "../features/player/playerSlice";
 import inputReducer from "../features/input/inputSlice";
+import uisettingsReducer from "../../player/common/UISettingsSlice";
 
 import {
   persistStore,
@@ -23,6 +24,7 @@ import storage from "redux-persist/lib/storage";
 const rootReducer = combineReducers({
   connection: connectionReducer,
   output: outputReducer,
+  uisettings: uisettingsReducer,
   settings: settingsReducer,
   bookmarks: bookmarksReducer,
   tabs: tabsReducer,
@@ -56,13 +58,38 @@ const migrations: any = {
       },
     };
   },
+  4: (state: RootState): RootState => {
+    return {
+      ...state,
+      uisettings: {
+        byName: {
+          displayuisettingsbar: { name: 'displayuisettingsbar', value: 'true'},
+          gridmode: { name: 'gridmode', value: 'normal'},
+          xscolumnsnumber: { name: 'xscolumnsnumber', value: '6'},
+          smcolumnsnumber: { name: 'smcolumnsnumber', value: '4'},
+          mdcolumnsnumber: { name: 'mdcolumnsnumber', value: '3'},
+          listitemheight: { name: 'listitemheight', value: '200px'},
+          containerwidth: { name: 'containerwidth', value: 'fixed'}
+        },
+        allsettings: [
+          { name: 'displayuisettingsbar', value: 'true'},
+          { name: 'gridmode', value: 'normal'},
+          { name: 'xscolumnsnumber', value: '6'},
+          { name: 'smcolumnsnumber', value: '4'},
+          { name: 'mdcolumnsnumber', value: '3'},
+          { name: 'listitemheight', value: '200px'},
+          { name: 'containerwidth', value: 'fixed'}
+        ]
+      }
+    };
+  },
 };
 
 const persistConfig = {
   key: "root",
-  version: 4,
+  version: 5,
   storage,
-  whitelist: ["bookmarks", "settings"],
+  whitelist: ["bookmarks", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),
 };
 
