@@ -13,7 +13,8 @@ import Chip from "@mui/material/Chip";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { addTag, editTrack, Tag, Track } from "./playlistsSlice";
-import { nextTagColor, tagTextColor } from "./tagColors";
+import { nextTagColor } from "./tagColors";
+import { TagChip } from "./TagChip";
 import { TrackThumbnail } from "./TrackThumbnail";
 import { INHERIT_PLAYLIST } from "./thumbnailUrl";
 import { AudioSelector } from "../../common/AudioSelector";
@@ -165,24 +166,24 @@ export function TrackSettings({
             }
             // Hide already-selected tags from the suggestion dropdown.
             filterSelectedOptions
-            // Render each selected tag as a chip tinted with the tag's color.
+            // Render each selected tag with the shared TagChip so it's tinted
+            // with the tag's color AND supports right-click → recolor right here
+            // in the dialog (no need to close and reopen to change a color).
+            // A freeSolo option can briefly be a raw string while typing — show
+            // a plain chip for that transient case.
             renderTags={(value, getTagProps) =>
               value.map((option, index) => {
-                const { key, ...tagProps } = getTagProps({ index });
-                const tag = typeof option === "string" ? undefined : option;
+                const { key, onDelete } = getTagProps({ index });
+                if (typeof option === "string") {
+                  return <Chip key={key} label={option} onDelete={onDelete} />;
+                }
                 return (
-                  <Chip
+                  <TagChip
                     key={key}
-                    label={tag ? tag.name : String(option)}
-                    {...tagProps}
-                    sx={
-                      tag
-                        ? {
-                            backgroundColor: tag.color,
-                            color: tagTextColor(tag.color),
-                          }
-                        : undefined
-                    }
+                    tag={option}
+                    // getTagProps' onDelete takes the click event; TagChip's
+                    // prop is parameterless, so cast to line the types up.
+                    onDelete={onDelete as () => void}
                   />
                 );
               })

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -48,6 +48,11 @@ export function Search({ onPlay }: SearchProps) {
 
   // Title text filter is plain local state — no need to put it in the URL.
   const [query, setQuery] = useState("");
+  // The text field stays bound to `query` (instant), but the expensive
+  // filtering + list render reads this deferred copy. React renders the heavy
+  // results list at low priority and can interrupt it to keep typing smooth, so
+  // a large library no longer freezes the bar on every keystroke.
+  const deferredQuery = useDeferredValue(query);
 
   const allTags = playlists.tags.allIds.map((id) => playlists.tags.byId[id]);
   const selectedTags = selectedTagIds
@@ -78,7 +83,7 @@ export function Search({ onPlay }: SearchProps) {
   }, [playlists.playlists]);
 
   const results = useMemo(() => {
-    const text = query.trim().toLowerCase();
+    const text = deferredQuery.trim().toLowerCase();
     const ids = selectedKey === "" ? [] : selectedKey.split(",");
     return Object.values(playlists.tracks)
       .filter((track) => {
@@ -93,7 +98,7 @@ export function Search({ onPlay }: SearchProps) {
         return matchesTags && matchesText;
       })
       .sort((a, b) => a.title.localeCompare(b.title));
-  }, [playlists.tracks, selectedKey, matchMode, query]);
+  }, [playlists.tracks, selectedKey, matchMode, deferredQuery]);
 
   // Write a new set of selected tag ids back into the URL. `replace: true` so
   // each filter tweak updates the current history entry instead of stacking a
