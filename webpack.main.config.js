@@ -10,6 +10,14 @@ module.exports = {
   },
   resolve: {
     extensions: [".js", ".ts", ".jsx", ".tsx", ".css", ".json"],
+    alias: {
+      // jsmediatags ships a React-Native file reader that does a top-level
+      // `require('react-native-fs')`. In Electron the RN branch never runs at
+      // runtime (it picks NodeFileReader instead), but webpack still statically
+      // follows the import and fails to resolve react-native-fs. Stub it to an
+      // empty module so the production build (`yarn make`) compiles.
+      "react-native-fs": false,
+    },
   },
   externals: {
     opusscript: "commonjs2 opusscript",
