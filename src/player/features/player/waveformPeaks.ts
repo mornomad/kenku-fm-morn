@@ -23,6 +23,59 @@ const peakCache = new Map<string, Float32Array | null>();
 // a second decode of the same file.
 const pending = new Map<string, Promise<Float32Array | null>>();
 
+// ---- Disk cache (IndexedDB) ----
+// Second-level cache so each track is decoded once EVER, not once per
+// session: ~8 KB of peaks per track on disk, loaded in milliseconds on
+// later sessions. Failures are deliberately NOT stored (a missing or
+// unreadable file should be retried next session). If IndexedDB itself is
+// unavailable, everything silently degrades to the in-memory cache.
+const DB_NAME = "kenku-waveform-peaks";
+const DB_VERSION = 1;
+const DB_STORE = "peaks";
+
+let dbPromise: Promise<IDBDatabase | null> | null = null;
+
+function openDb(): Promise<IDBDatabase | null> {
+  if (!dbPromise) {
+    dbPromise = new Promise((resolve) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore(DB_STORE);
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+    });
+  }
+  return dbPromise;
+}
+
+async function dbGet(url: string): Promise<Float32Array | undefined> {
+  const db = await openDb();
+  if (!db) return undefined;
+  return new Promise((resolve) => {
+    const request = db
+      .transaction(DB_STORE, "readonly")
+      .objectStore(DB_STORE)
+      .get(url);
+    request.onsuccess = () =>
+      resolve(
+        request.result instanceof Float32Array ? request.result : undefined
+      );
+    request.onerror = () => resolve(undefined);
+  });
+}
+
+async function dbSet(url: string, peaks: Float32Array): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  return new Promise((resolve) => {
+    const transaction = db.transaction(DB_STORE, "readwrite");
+    transaction.objectStore(DB_STORE).put(peaks, url);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => resolve();
+  });
+}
+
 function computePeaks(audio: AudioBuffer, count: number): Float32Array {
   const peaks = new Float32Array(count);
   const length = audio.length;
@@ -73,13 +126,33 @@ async function decodePeaks(url: string): Promise<Float32Array | null> {
 function loadPeaks(url: string): Promise<Float32Array | null> {
   const inFlight = pending.get(url);
   if (inFlight) return inFlight;
-  const promise = decodePeaks(url).then((peaks) => {
+  const promise = (async () => {
+    // Disk cache first — instant for any track decoded in a past session.
+    const stored = await dbGet(url);
+    if (stored) {
+      peakCache.set(url, stored);
+      return stored;
+    }
+    const peaks = await decodePeaks(url);
     peakCache.set(url, peaks);
-    pending.delete(url);
+    if (peaks) {
+      // Fire-and-forget; a failed write just means a re-decode next session.
+      void dbSet(url, peaks);
+    }
     return peaks;
-  });
+  })().finally(() => pending.delete(url));
   pending.set(url, promise);
   return promise;
+}
+
+// Warm the caches for a track without rendering anything — used to decode
+// the next queue entry in the background while the current track plays, so
+// its waveform is ready the moment it starts. No-op for remote urls and
+// tracks that are already cached or in flight.
+export function prefetchPeaks(url: string | undefined): void {
+  if (!url || !url.startsWith("kenku-media://local/")) return;
+  if (peakCache.has(url)) return;
+  void loadPeaks(url);
 }
 
 /**

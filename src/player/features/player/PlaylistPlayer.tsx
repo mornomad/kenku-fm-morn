@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import styled from "@mui/material/styles/styled";
 import Box from "@mui/material/Box";
@@ -25,7 +25,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { Waveform } from "./Waveform";
-import { usePeaks } from "./waveformPeaks";
+import { usePeaks, prefetchPeaks } from "./waveformPeaks";
 import { Tag, QUEUE_PLAYLIST_ID } from "../playlists/playlistsSlice";
 import { TagChip } from "../playlists/TagChip";
 import { TrackThumbnail } from "../playlists/TrackThumbnail";
@@ -457,6 +457,25 @@ function Time({ onPlaylistSeek }: Pick<PlaylistPlayerProps, "onPlaylistSeek">) {
     (state: RootState) => state.playlistPlayback.track?.url,
   );
   const peaks = usePeaks(timelineStyle === "slider" ? undefined : trackUrl);
+
+  // The url of whatever plays next (mirrors the next() logic in
+  // usePlaylistPlayback, including shuffle and wrap-around), so its peaks
+  // can be decoded in the background while the current track plays.
+  const nextTrackUrl = useSelector((state: RootState) => {
+    const queue = state.playlistPlayback.queue;
+    if (!queue || queue.tracks.length === 0) return undefined;
+    let index = queue.current + 1;
+    if (index >= queue.tracks.length) index = 0;
+    const id = state.playlistPlayback.shuffle
+      ? queue.tracks[queue.shuffled[index]]
+      : queue.tracks[index];
+    return id ? state.playlists.tracks[id]?.url : undefined;
+  });
+  useEffect(() => {
+    if (timelineStyle !== "slider") {
+      prefetchPeaks(nextTrackUrl);
+    }
+  }, [nextTrackUrl, timelineStyle]);
 
   function formatDuration(value: number) {
     const minute = Math.floor(value / 60);
