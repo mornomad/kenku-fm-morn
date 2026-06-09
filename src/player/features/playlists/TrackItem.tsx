@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
@@ -71,11 +71,17 @@ export function TrackItem({
     (state: RootState) => state.playlistPlayback.playing && isCurrentTrack,
   );
   // Resolve this track's tag ids into the actual Tag objects so we can show
-  // their names and colors. Filter drops any id whose tag no longer exists.
-  const tags = useSelector((state: RootState) =>
-    track.tagIds
-      .map((id) => state.playlists.tags.byId[id])
-      .filter((tag): tag is Tag => Boolean(tag)),
+  // their names and colors. Select the stable byId map and derive with
+  // useMemo — building the array inside useSelector returned a fresh
+  // reference every run, re-rendering every visible row on every store
+  // action (including the once-a-second playback tick).
+  const tagsById = useSelector((state: RootState) => state.playlists.tags.byId);
+  const tags = useMemo(
+    () =>
+      track.tagIds
+        .map((id) => tagsById[id])
+        .filter((tag): tag is Tag => Boolean(tag)),
+    [track.tagIds, tagsById],
   );
   const dispatch = useDispatch();
   const navigate = useNavigate();

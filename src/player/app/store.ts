@@ -121,6 +121,10 @@ const persistConfig = {
   storage,
   whitelist: ["playlists", "soundboards", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),
+  // Batch storage writes: persisting serializes the entire library, so
+  // action bursts (drag reorders, bulk tag edits) shouldn't re-stringify
+  // everything once per action.
+  throttle: 1000,
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

@@ -179,7 +179,12 @@ if (!hasSingleInstanceLock) {
         // (Node's Buffer type doesn't line up with the DOM BodyInit type).
         return new Response(new Uint8Array(thumb.data), {
           status: 200,
-          headers: { "Content-Type": thumb.mime },
+          headers: {
+            "Content-Type": thumb.mime,
+            // Let the renderer's HTTP cache reuse the image across row
+            // mounts instead of round-tripping to this handler every time.
+            "Cache-Control": "public, max-age=86400",
+          },
         });
       }
 

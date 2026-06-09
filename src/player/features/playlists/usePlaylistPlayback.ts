@@ -14,7 +14,7 @@ import { Track } from "./playlistsSlice";
 
 export function usePlaylistPlayback(onError: (message: string) => void) {
   const trackRef = useRef<Howl | null>(null);
-  const animationRef = useRef<number | null>(null);
+  const progressIntervalRef = useRef<number | null>(null);
 
   const playlists = useSelector((state: RootState) => state.playlists);
   const store = useStore<RootState>();
@@ -69,22 +69,17 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
             prevTrack.once("fade", removePrevTrack);
           }
           howl.fade(0, store.getState().playlistPlayback.volume, 1000);
-          // Update playback
-          // Create playback animation
-          if (animationRef.current !== null) {
-            cancelAnimationFrame(animationRef.current);
+          // Drive the once-a-second progress updates with an interval. (This
+          // used to be a requestAnimationFrame loop that woke up ~60 times a
+          // second only to check whether a second had passed.)
+          if (progressIntervalRef.current !== null) {
+            clearInterval(progressIntervalRef.current);
           }
-          let prevTime = performance.now();
-          function animatePlayback(time: number) {
-            animationRef.current = requestAnimationFrame(animatePlayback);
-            // Limit update to 1 time per second
-            const delta = time - prevTime;
-            if (howl.playing() && delta > 1000) {
+          progressIntervalRef.current = window.setInterval(() => {
+            if (howl.playing()) {
               dispatch(updatePlayback(Math.floor(howl.seek())));
-              prevTime = time;
             }
-          }
-          animationRef.current = requestAnimationFrame(animatePlayback);
+          }, 1000);
         });
 
         howl.on("loaderror", error);
