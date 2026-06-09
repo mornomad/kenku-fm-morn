@@ -22,6 +22,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
+import { Waveform } from "./Waveform";
+import { usePeaks } from "./waveformPeaks";
 import { Tag } from "../playlists/playlistsSlice";
 import { TagChip } from "../playlists/TagChip";
 import { TrackThumbnail } from "../playlists/TrackThumbnail";
@@ -229,7 +231,6 @@ function Controls({
   const playbackRepeat = useSelector(
     (state: RootState) => state.playlistPlayback.repeat,
   );
-
   function handlePlay() {
     dispatch(playPause(!playing));
   }
@@ -358,6 +359,20 @@ function Time({ onPlaylistSeek }: Pick<PlaylistPlayerProps, "onPlaylistSeek">) {
   const playback = useSelector(
     (state: RootState) => state.playlistPlayback.playback,
   );
+  const timelineStyle = useSelector(
+    (state: RootState) => state.settings.timelineStyle,
+  );
+  const waveformReflection = useSelector(
+    (state: RootState) => state.settings.waveformReflection,
+  );
+  // Waveform peaks for the current track. undefined while decoding, null when
+  // unavailable (remote url / decode failure) — both fall back to the slider.
+  // With the waveform turned off we pass no url at all, so nothing is ever
+  // fetched or decoded.
+  const trackUrl = useSelector(
+    (state: RootState) => state.playlistPlayback.track?.url,
+  );
+  const peaks = usePeaks(timelineStyle === "slider" ? undefined : trackUrl);
 
   function formatDuration(value: number) {
     const minute = Math.floor(value / 60);
@@ -380,29 +395,50 @@ function Time({ onPlaylistSeek }: Pick<PlaylistPlayerProps, "onPlaylistSeek">) {
   const time = timeOverride === null ? playback?.progress || 0 : timeOverride;
   const duration = playback?.duration || 0;
 
+  // `!= null` (loose) filters out both null and undefined, so this is true
+  // only once the peaks array is actually ready.
+  const showWaveform =
+    timelineStyle !== "slider" && peaks != null && duration > 0;
+
   return (
     <Box>
-      <TimeSlider
-        aria-label="time-indicator"
-        size="small"
-        value={time}
-        min={0}
-        step={1}
-        max={duration}
-        disabled={!Boolean(playback) || duration <= 0}
-        onChange={(_, value) => {
-          if (typeof value === "number" && Number.isFinite(value)) {
-            setTimeOverride(value);
-          }
-        }}
-        onChangeCommitted={handleTimeChange}
-      />
+      {showWaveform ? (
+        <Waveform
+          peaks={peaks}
+          progress={playback?.progress || 0}
+          duration={duration}
+          variant={timelineStyle}
+          reflection={waveformReflection}
+          disabled={!Boolean(playback)}
+          onScrub={setTimeOverride}
+          onSeek={(to) => {
+            setTimeOverride(null);
+            onPlaylistSeek(to);
+          }}
+        />
+      ) : (
+        <TimeSlider
+          aria-label="time-indicator"
+          size="small"
+          value={time}
+          min={0}
+          step={1}
+          max={duration}
+          disabled={!Boolean(playback) || duration <= 0}
+          onChange={(_, value) => {
+            if (typeof value === "number" && Number.isFinite(value)) {
+              setTimeOverride(value);
+            }
+          }}
+          onChangeCommitted={handleTimeChange}
+        />
+      )}
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          mt: -2,
+          mt: showWaveform ? 0.5 : -2,
         }}
       >
         <TinyText>{formatDuration(time)}</TinyText>

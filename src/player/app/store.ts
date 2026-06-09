@@ -64,7 +64,22 @@ const migrations = {
         ]
       }
     };
-  }
+  },
+  // Version 4: the timeline waveform settings appear, and the single search
+  // bar becomes the default. Persisted settings replace initialState wholesale
+  // on rehydrate, so new keys must be seeded here or they'd come back
+  // undefined for existing installs.
+  4: (state: any) => {
+    return {
+      ...state,
+      settings: {
+        ...(state?.settings ?? {}),
+        searchMode: "unified",
+        timelineStyle: state?.settings?.timelineStyle ?? "bars",
+        waveformReflection: state?.settings?.waveformReflection ?? true,
+      },
+    };
+  },
 };
 
 const playbackPersistConfig = {
@@ -88,7 +103,7 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
   key: "player",
-  version: 3,
+  version: 4,
   storage,
   whitelist: ["playlists", "soundboards", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),
