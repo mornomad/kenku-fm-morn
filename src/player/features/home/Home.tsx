@@ -186,7 +186,13 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
         <CardContent>
           <Grid container spacing={2}>
             {soundboardItems.map((soundboard) => (
-              <Grid xs={6} sm={4} md={3} item key={soundboard.id}>
+              <Grid
+                xs={Number(uisettings.byName["xscolumnsnumber"].value)}
+                sm={Number(uisettings.byName["smcolumnsnumber"].value)}
+                md={Number(uisettings.byName["mdcolumnsnumber"].value)}
+                item
+                key={soundboard.id}
+              >
                 <SoundboardItem
                   soundboard={soundboard}
                   onSelect={(id) => navigate(`/soundboards/${id}`)}

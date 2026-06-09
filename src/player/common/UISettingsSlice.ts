@@ -18,7 +18,8 @@ const initialState: UISettingsState = {
     smcolumnsnumber: { name: 'smcolumnsnumber', value: '4'},
     mdcolumnsnumber: { name: 'mdcolumnsnumber', value: '3'},
     listitemheight: { name: 'listitemheight', value: '200px'},
-    containerwidth: { name: 'containerwidth', value: 'fixed'}
+    containerwidth: { name: 'containerwidth', value: 'fixed'},
+    playlistcontainerwidth: { name: 'playlistcontainerwidth', value: 'fixed'},
   },
   allsettings: [
     { name: 'displayuisettingsbar', value: 'true'},
@@ -27,7 +28,8 @@ const initialState: UISettingsState = {
     { name: 'smcolumnsnumber', value: '4'},
     { name: 'mdcolumnsnumber', value: '3'},
     { name: 'listitemheight', value: '200px'},
-    { name: 'containerwidth', value: 'fixed'}
+    { name: 'containerwidth', value: 'fixed'},
+    { name: 'playlistcontainerwidth', value: 'fixed'},
   ]
 };
 

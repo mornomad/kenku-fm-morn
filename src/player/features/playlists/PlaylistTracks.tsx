@@ -99,9 +99,9 @@ export function PlaylistTracks({
           "linear-gradient(to bottom, transparent, black 60px, black calc(100% - 64px), transparent)",
         position: "absolute",
         width: "100%",
-        height: "calc(100% - 120px)",
+        height: "calc(100% - 160px)",
         pt: "60px",
-        top: "120px",
+        top: uisettings.byName["displayuisettingsbar"].value == "true" ? 160 : 60,
         left: 0,
         px: 2,
       }}
@@ -112,7 +112,7 @@ export function PlaylistTracks({
         sx={{
           width: "100%",
           minWidth: 360,
-          maxWidth: uisettings.byName["containerwidth"].value == "full" ? "100%" : 720,
+          maxWidth: uisettings.byName["playlistcontainerwidth"]?.value == "full" ? "100%" : 720,
           margin: "0 auto",
           marginBottom: "240px",
         }}

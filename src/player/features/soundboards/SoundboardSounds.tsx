@@ -23,8 +23,9 @@ import {
 import { SoundItem } from "./SoundItem";
 import { SortableItem } from "../../common/SortableItem";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Soundboard, Sound, moveSound } from "./soundboardsSlice";
+import { RootState } from "../../app/store";
 
 import { useHideScrollbar } from "../../../renderer/common/useHideScrollbar";
 import Stack from "@mui/material/Stack";
@@ -52,6 +53,9 @@ export function SoundboardSounds({
   const sensors = useSensors(pointerSensor, keyboardSensor);
 
   const [dragId, setDragId] = useState<string | null>(null);
+
+  const uisettings = useSelector((state: RootState) => state.uisettings);
+
   function handleDragStart(event: DragStartEvent) {
     setDragId(event.active.id);
   }
@@ -76,6 +80,7 @@ export function SoundboardSounds({
   const hideScrollbar = useHideScrollbar(scrollRef);
 
   return (
+
     <Box
       sx={{
         overflowY: "auto",
@@ -83,9 +88,9 @@ export function SoundboardSounds({
           "linear-gradient(to bottom, transparent, black 60px, black calc(100% - 64px), transparent)",
         position: "absolute",
         width: "100%",
-        height: "calc(100% - 60px)",
+        height: "calc(100% - 160px)",
         pt: "60px",
-        top: "60px",
+        top: uisettings.byName["displayuisettingsbar"].value == "true" ? 160 : 60,
         left: 0,
         px: 2,
       }}

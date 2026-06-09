@@ -45,29 +45,6 @@ const migrations = {
   3: (state: any) => {
     return {
       ...state,
-      uisettings: state.uisettings ?? {
-        byName: {
-          gridmode: { name: 'gridmode', value: 'normal'},
-          xscolumnsnumber: { name: 'xscolumnsnumber', value: '6'},
-          smcolumnsnumber: { name: 'smcolumnsnumber', value: '4'},
-          mdcolumnsnumber: { name: 'mdcolumnsnumber', value: '3'},
-          listitemheight: { name: 'listitemheight', value: '200px'},
-          containerwidth: { name: 'containerwidth', value: 'fixed'}
-        },
-        allsettings: [
-          { name: 'gridmode', value: 'normal'},
-          { name: 'xscolumnsnumber', value: '6'},
-          { name: 'smcolumnsnumber', value: '4'},
-          { name: 'mdcolumnsnumber', value: '3'},
-          { name: 'listitemheight', value: '200px'},
-          { name: 'containerwidth', value: 'fixed'}
-        ]
-      }
-    };
-  },
-  4: (state: any) => {
-    return {
-      ...state,
       uisettings: {
         byName: {
           displayuisettingsbar: { name: 'displayuisettingsbar', value: "true"},
@@ -76,7 +53,8 @@ const migrations = {
           smcolumnsnumber: { name: 'smcolumnsnumber', value: '4'},
           mdcolumnsnumber: { name: 'mdcolumnsnumber', value: '3'},
           listitemheight: { name: 'listitemheight', value: '200px'},
-          containerwidth: { name: 'containerwidth', value: 'fixed'}
+          containerwidth: { name: 'containerwidth', value: 'fixed'},
+          playlistcontainerwidth: { name: 'playlistcontainerwidth', value: 'fixed'},
         },
         allsettings: [
           { name: 'displayuisettingsbar', value: "true"},
@@ -85,7 +63,8 @@ const migrations = {
           { name: 'smcolumnsnumber', value: '4'},
           { name: 'mdcolumnsnumber', value: '3'},
           { name: 'listitemheight', value: '200px'},
-          { name: 'containerwidth', value: 'fixed'}
+          { name: 'containerwidth', value: 'fixed'},
+          { name: 'playlistcontainerwidth', value: 'fixed'}
         ]
       }
     };
@@ -113,7 +92,7 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
   key: "player",
-  version: 4,
+  version: 3,
   storage,
   whitelist: ["playlists", "soundboards", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),

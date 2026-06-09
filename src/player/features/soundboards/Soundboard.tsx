@@ -36,6 +36,7 @@ export function Soundboard({ onPlay, onStop }: SoundboardProps) {
   const soundboard = useSelector(
     (state: RootState) => state.soundboards.soundboards.byId[soundboardId]
   );
+  const uisettings = useSelector((state: RootState) => state.uisettings);
 
   const [addOpen, setAddOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -94,7 +95,7 @@ export function Soundboard({ onPlay, onStop }: SoundboardProps) {
           padding: "0px !important",
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: "calc(100vh - 120px)",
         }}
         {...containerListeners}
       >
@@ -103,7 +104,7 @@ export function Soundboard({ onPlay, onStop }: SoundboardProps) {
             backgroundImage: `url("${image}")`,
             backgroundSize: "cover",
             position: "absolute",
-            top: 0,
+            top: uisettings.byName["displayuisettingsbar"].value == "true" ? 120 : 0,
             left: 0,
             right: 0,
             bottom: 0,
@@ -115,7 +116,7 @@ export function Soundboard({ onPlay, onStop }: SoundboardProps) {
             backgroundImage:
               "linear-gradient(0deg, #ffffff44 30%,  #00000088 100%)",
             position: "absolute",
-            top: 0,
+            top: uisettings.byName["displayuisettingsbar"].value == "true" ? 120 : 0,
             left: 0,
             right: 0,
             bottom: 0,
