@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { nativeImage } from "electron";
 import jsmediatags from "jsmediatags";
 import type { TagResult } from "jsmediatags";
@@ -41,9 +43,30 @@ function readTags(filePath: string): Promise<TagResult> {
   });
 }
 
-// Extract the embedded cover art from an audio file (ID3 for mp3, the picture
-// block in flac, the cover atom in m4a, …). Returns null if there's no art or
-// the file can't be parsed.
+// Plain image files (e.g. custom playlist covers) served through the thumb
+// route get the same downscale treatment as embedded art.
+const IMAGE_EXTENSIONS = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+  ".bmp",
+]);
+
+const IMAGE_MIME: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".bmp": "image/bmp",
+};
+
+// Produce a small thumbnail for a file: embedded cover art for audio files
+// (ID3 for mp3, the picture block in flac, the cover atom in m4a, …) or a
+// downscaled copy of the file itself when it's an image. Returns null if
+// there's nothing to show or the file can't be parsed.
 export async function getEmbeddedThumbnail(
   filePath: string,
 ): Promise<EmbeddedThumbnail | null> {
@@ -52,14 +75,27 @@ export async function getEmbeddedThumbnail(
     return cached;
   }
   let result: EmbeddedThumbnail | null = null;
+  const extension = path.extname(filePath).toLowerCase();
   try {
-    const tag = await readTags(filePath);
-    const picture = tag?.tags?.picture;
-    if (picture && picture.format && picture.data && picture.data.length > 0) {
+    if (IMAGE_EXTENSIONS.has(extension)) {
       result = downscale({
-        mime: picture.format,
-        data: Buffer.from(picture.data),
+        mime: IMAGE_MIME[extension],
+        data: await fs.promises.readFile(filePath),
       });
+    } else {
+      const tag = await readTags(filePath);
+      const picture = tag?.tags?.picture;
+      if (
+        picture &&
+        picture.format &&
+        picture.data &&
+        picture.data.length > 0
+      ) {
+        result = downscale({
+          mime: picture.format,
+          data: Buffer.from(picture.data),
+        });
+      }
     }
   } catch {
     result = null;

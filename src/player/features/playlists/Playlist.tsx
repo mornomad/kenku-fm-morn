@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useCallback, useState } from "react";
+import { useDispatch, useSelector, useStore } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Add from "@mui/icons-material/AddCircleRounded";
@@ -68,11 +68,13 @@ export function Playlist({ onPlay }: PlaylistProps) {
     setSelectionMode((on) => !on);
     setSelectedIds([]);
   }
-  function toggleSelected(id: string) {
+  // Stable identity (functional update, no deps) so memoized TrackItem rows
+  // don't all re-render when this component does.
+  const toggleSelected = useCallback((id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
-  }
+  }, []);
   const currentTrackId = useSelector(
     (state: RootState) => state.playlistPlayback.track?.id,
   );
@@ -128,14 +130,28 @@ export function Playlist({ onPlay }: PlaylistProps) {
     handleMenuClose();
   }
 
-  function handleTrackPlay(trackId: string) {
-    const track = playlists.tracks[trackId];
-    if (track) {
-      let tracks = [...playlist.tracks];
-      dispatch(startQueue({ tracks, trackId, playlistId: playlist.id }));
-      onPlay(track);
-    }
-  }
+  // Read the store at call time (instead of closing over render-scope state)
+  // so this callback stays referentially stable across library edits — a
+  // changing onPlay prop would defeat the TrackItem memo for every row.
+  const store = useStore<RootState>();
+  const handleTrackPlay = useCallback(
+    (trackId: string) => {
+      const state = store.getState();
+      const track = state.playlists.tracks[trackId];
+      const current = state.playlists.playlists.byId[playlistId];
+      if (track && current) {
+        dispatch(
+          startQueue({
+            tracks: [...current.tracks],
+            trackId,
+            playlistId: current.id,
+          }),
+        );
+        onPlay(track);
+      }
+    },
+    [store, dispatch, onPlay, playlistId],
+  );
 
   const { dragging, containerListeners, overlayListeners } = useFolderDrop(
     (directories) => {

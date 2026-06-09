@@ -1,4 +1,4 @@
-import React, { useDeferredValue, useMemo, useState } from "react";
+import React, { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -116,20 +116,25 @@ export function Search({ onPlay }: SearchProps) {
     setSearchParams(next, { replace: true });
   }
 
-  function handlePlay(trackId: string) {
-    const track = playlists.tracks[trackId];
-    const playlist = playlistByTrackId[trackId];
-    if (track && playlist) {
-      dispatch(
-        startQueue({
-          tracks: [...playlist.tracks],
-          trackId,
-          playlistId: playlist.id,
-        }),
-      );
-      onPlay(track);
-    }
-  }
+  // useCallback so memoized TrackItem rows keep a stable onPlay while the
+  // user types (the deps only change when the library itself changes).
+  const handlePlay = useCallback(
+    (trackId: string) => {
+      const track = playlists.tracks[trackId];
+      const playlist = playlistByTrackId[trackId];
+      if (track && playlist) {
+        dispatch(
+          startQueue({
+            tracks: [...playlist.tracks],
+            trackId,
+            playlistId: playlist.id,
+          }),
+        );
+        onPlay(track);
+      }
+    },
+    [playlists.tracks, playlistByTrackId, dispatch, onPlay],
+  );
 
   return (
     <Container sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>

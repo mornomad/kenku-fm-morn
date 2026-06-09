@@ -29,7 +29,7 @@ import { usePeaks } from "./waveformPeaks";
 import { Tag, QUEUE_PLAYLIST_ID } from "../playlists/playlistsSlice";
 import { TagChip } from "../playlists/TagChip";
 import { TrackThumbnail } from "../playlists/TrackThumbnail";
-import { playlistImageUrl } from "../playlists/playlistImage";
+import { playlistImageThumbUrl } from "../playlists/playlistImage";
 import {
   adjustVolume,
   playPause,
@@ -154,7 +154,7 @@ function Title() {
         <TrackThumbnail
           track={liveTrack}
           size={44}
-          playlistImage={playlistImageUrl(
+          playlistImage={playlistImageThumbUrl(
             queue ? playlists.playlists.byId[queue.playlistId] : undefined,
           )}
         />

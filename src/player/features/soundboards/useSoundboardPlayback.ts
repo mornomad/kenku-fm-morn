@@ -55,29 +55,23 @@ export function useSoundboardPlayback(onError: (message: string) => void) {
   );
 
   useEffect(() => {
-    // Update playback
-    let handler = requestAnimationFrame(animatePlayback);
-    let prevTime = performance.now();
-    function animatePlayback(time: number) {
-      handler = requestAnimationFrame(animatePlayback);
-      // Limit update to 1 time per second
-      const delta = time - prevTime;
-      if (delta > 1000) {
-        const updates: { id: string; progress: number }[] = [];
-        for (let id in soundsRef.current) {
-          const sound = soundsRef.current[id];
-          if (sound.playing()) {
-            updates.push({ id, progress: sound.progress() });
-          }
+    // Drive the once-a-second progress updates with an interval. (This used
+    // to be a requestAnimationFrame loop that woke up ~60 times a second
+    // only to check whether a second had passed.)
+    const interval = window.setInterval(() => {
+      const updates: { id: string; progress: number }[] = [];
+      for (let id in soundsRef.current) {
+        const sound = soundsRef.current[id];
+        if (sound.playing()) {
+          updates.push({ id, progress: sound.progress() });
         }
-        if (updates.length > 0) {
-          dispatch(updatePlayback(updates));
-        }
-        prevTime = time;
       }
-    }
+      if (updates.length > 0) {
+        dispatch(updatePlayback(updates));
+      }
+    }, 1000);
     return () => {
-      cancelAnimationFrame(handler);
+      clearInterval(interval);
     };
   }, []);
 

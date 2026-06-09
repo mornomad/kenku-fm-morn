@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
@@ -75,21 +75,26 @@ export function Queue({ onPlay }: QueueProps) {
     .map((id) => playlists.tracks[id])
     .filter((track): track is Track => Boolean(track));
 
-  function handlePlay(trackId: string) {
-    const track = playlists.tracks[trackId];
-    if (track) {
-      // The queue itself becomes the active playback list, under the sentinel
-      // id — next/previous/repeat now loop the queue.
-      dispatch(
-        startQueue({
-          tracks: [...queueIds],
-          trackId,
-          playlistId: QUEUE_PLAYLIST_ID,
-        }),
-      );
-      onPlay(track);
-    }
-  }
+  // useCallback so memoized TrackItem rows keep a stable onPlay across
+  // queue reorders and unrelated re-renders.
+  const handlePlay = useCallback(
+    (trackId: string) => {
+      const track = playlists.tracks[trackId];
+      if (track) {
+        // The queue itself becomes the active playback list, under the
+        // sentinel id — next/previous/repeat now loop the queue.
+        dispatch(
+          startQueue({
+            tracks: [...queueIds],
+            trackId,
+            playlistId: QUEUE_PLAYLIST_ID,
+          }),
+        );
+        onPlay(track);
+      }
+    },
+    [playlists.tracks, queueIds, dispatch, onPlay],
+  );
 
   function handleClear() {
     if (window.confirm("Clear the queue?")) {

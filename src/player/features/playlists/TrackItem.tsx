@@ -33,7 +33,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { TrackSettings } from "./TrackSettings";
 import { TagChip } from "./TagChip";
 import { TrackThumbnail } from "./TrackThumbnail";
-import { playlistImageUrl } from "./playlistImage";
+import { playlistImageThumbUrl } from "./playlistImage";
 import { PlaylistPickerDialog } from "./PlaylistPickerDialog";
 import { RootState } from "../../app/store";
 import {
@@ -56,7 +56,10 @@ type TrackItemProps = {
   onToggleSelected?: (id: string) => void;
 };
 
-export function TrackItem({
+// Memoized: lists render hundreds of these, and without memo every row
+// re-renders whenever the parent list re-renders (any library change). The
+// parents pass useCallback'd handlers so the shallow prop compare holds.
+export const TrackItem = React.memo(function TrackItem({
   track,
   playlist,
   onPlay,
@@ -86,8 +89,9 @@ export function TrackItem({
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // The playlist's image, used as the fallback cover for tracks without art.
-  const playlistImage = playlistImageUrl(playlist);
+  // The playlist's image (downscaled for this small slot), used as the
+  // fallback cover for tracks without art.
+  const playlistImage = playlistImageThumbUrl(playlist);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -406,4 +410,4 @@ export function TrackItem({
       />
     </ListItem>
   );
-}
+});
