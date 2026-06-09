@@ -9,7 +9,8 @@
     "package": "env-cmd electron-forge package",
     "make": "env-cmd electron-forge make",
     "publish": "env-cmd electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "postinstall": "node scripts/fix-opus-prebuild.js"
   },
   "keywords": [],
   "author": {
@@ -57,6 +58,7 @@
   },
   "dependencies": {
     "@braintree/sanitize-url": "^7.1.1",
+    "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.19.0",
     "@dnd-kit/core": "3.1.0",
     "@dnd-kit/sortable": "4.0.0",

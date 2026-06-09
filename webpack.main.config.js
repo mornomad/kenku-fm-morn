@@ -24,5 +24,8 @@ module.exports = {
     "prism-media": "commonjs2 prism-media",
     "@snazzah/davey": "commonjs2 @snazzah/davey",
     "zlib-sync": "commonjs2 zlib-sync",
+    // Native Opus encoder — prism-media picks it over opusscript when
+    // present, moving Discord audio encoding from JS to native code.
+    "@discordjs/opus": "commonjs2 @discordjs/opus",
   },
 };
