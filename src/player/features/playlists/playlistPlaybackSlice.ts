@@ -171,6 +171,24 @@ export const playlistPlaybackSlice = createSlice({
         state.queue.current += action.payload.trackIds.length;
       }
     },
+    // Append tracks to the END of the live playback list (unlike
+    // addTracksToQueueIfNeeded, which unshifts to the start to mirror how
+    // playlists add new tracks at the top). Used when adding to the play
+    // queue while the queue itself is what's playing.
+    appendTracksToQueueIfNeeded: (
+      state,
+      action: PayloadAction<{ playlistId: string; trackIds: string[] }>,
+    ) => {
+      if (state.queue && state.queue.playlistId === action.payload.playlistId) {
+        const startIndex = state.queue.tracks.length;
+        state.queue.tracks.push(...action.payload.trackIds);
+        // New indices also go at the end of the shuffle order, so they play
+        // after everything already queued up.
+        for (let i = 0; i < action.payload.trackIds.length; i++) {
+          state.queue.shuffled.push(startIndex + i);
+        }
+      }
+    },
     playTrack: (
       state,
       action: PayloadAction<{ track: Track; duration: number }>,
@@ -232,6 +250,7 @@ export const {
   removeTrackFromQueue,
   addTrackToQueueIfNeeded,
   addTracksToQueueIfNeeded,
+  appendTracksToQueueIfNeeded,
   playTrack,
   stopTrack,
   playPause,

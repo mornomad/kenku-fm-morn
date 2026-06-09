@@ -16,6 +16,8 @@ import RepeatOne from "@mui/icons-material/RepeatOneRounded";
 import Shuffle from "@mui/icons-material/ShuffleRounded";
 import Next from "@mui/icons-material/SkipNextRounded";
 import Previous from "@mui/icons-material/SkipPreviousRounded";
+import QueueMusic from "@mui/icons-material/QueueMusicRounded";
+import Tooltip from "@mui/material/Tooltip";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -24,7 +26,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { Waveform } from "./Waveform";
 import { usePeaks } from "./waveformPeaks";
-import { Tag } from "../playlists/playlistsSlice";
+import { Tag, QUEUE_PLAYLIST_ID } from "../playlists/playlistsSlice";
 import { TagChip } from "../playlists/TagChip";
 import { TrackThumbnail } from "../playlists/TrackThumbnail";
 import { playlistImageUrl } from "../playlists/playlistImage";
@@ -34,6 +36,8 @@ import {
   mute,
   shuffle,
   repeat,
+  startQueue,
+  updateQueue,
 } from "../playlists/playlistPlaybackSlice";
 
 const minWidthForLargeContext = 650;
@@ -121,11 +125,13 @@ function Title() {
     [liveTagIds, track, tagsById],
   );
 
-  // Jump to the playlist the current track is playing from. When we're already
-  // on a playlist page, replace the history entry instead of pushing — so
-  // repeated jumps between playlists don't stack up and trap the back button.
+  // Jump to the playlist (or queue) the current track is playing from. When
+  // we're already on a playlist page, replace the history entry instead of
+  // pushing — so repeated jumps don't stack up and trap the back button.
   function goToPlaylist() {
-    if (queue?.playlistId) {
+    if (queue?.playlistId === QUEUE_PLAYLIST_ID) {
+      navigate("/queue", { replace: location.pathname === "/queue" });
+    } else if (queue?.playlistId) {
       const onPlaylistPage = location.pathname.startsWith("/playlists/");
       navigate(`/playlists/${queue.playlistId}`, { replace: onPlaylistPage });
     }
@@ -186,7 +192,11 @@ function Title() {
           }}
           noWrap
         >
-          {noTrack ? "" : playlists.playlists.byId[queue.playlistId]?.title}
+          {noTrack
+            ? ""
+            : queue?.playlistId === QUEUE_PLAYLIST_ID
+              ? "Queue"
+              : playlists.playlists.byId[queue.playlistId]?.title}
         </Typography>
         {!noTrack && tags.length > 0 && (
           <Box
@@ -231,8 +241,62 @@ function Controls({
   const playbackRepeat = useSelector(
     (state: RootState) => state.playlistPlayback.repeat,
   );
+  const queue = useSelector((state: RootState) => state.playlistPlayback.queue);
+  const track = useSelector((state: RootState) => state.playlistPlayback.track);
+  const userQueue = useSelector((state: RootState) => state.playlists.queue);
+  const playlistsById = useSelector(
+    (state: RootState) => state.playlists.playlists.byId,
+  );
+  const playlistAllIds = useSelector(
+    (state: RootState) => state.playlists.playlists.allIds,
+  );
+  const playingFromQueue = queue?.playlistId === QUEUE_PLAYLIST_ID;
+
   function handlePlay() {
     dispatch(playPause(!playing));
+  }
+
+  // Switch what next/previous/repeat loop over — the play queue or the
+  // current track's home playlist — without interrupting the playing track.
+  function handleToggleSource() {
+    if (!track || !queue) return;
+    if (playingFromQueue) {
+      // Back to the track's home playlist.
+      const playlistId = playlistAllIds.find((id) =>
+        playlistsById[id].tracks.includes(track.id),
+      );
+      if (playlistId) {
+        dispatch(
+          startQueue({
+            tracks: [...playlistsById[playlistId].tracks],
+            trackId: track.id,
+            playlistId,
+          }),
+        );
+      }
+    } else if (userQueue.length > 0) {
+      if (userQueue.includes(track.id)) {
+        dispatch(
+          startQueue({
+            tracks: [...userQueue],
+            trackId: track.id,
+            playlistId: QUEUE_PLAYLIST_ID,
+          }),
+        );
+      } else {
+        // The playing track isn't in the queue: keep it playing and park the
+        // position before the start (-1), so when it ends the queue takes
+        // over from its first track.
+        dispatch(
+          startQueue({
+            tracks: [...userQueue],
+            trackId: userQueue[0],
+            playlistId: QUEUE_PLAYLIST_ID,
+          }),
+        );
+        dispatch(updateQueue(-1));
+      }
+    }
   }
 
   function handlRepeat() {
@@ -301,6 +365,26 @@ function Controls({
           <RepeatOne color="primary" />
         )}
       </IconButton>
+      <Tooltip
+        title={
+          playingFromQueue
+            ? "Looping the queue — click to loop the playlist"
+            : "Loop the queue"
+        }
+      >
+        {/* span so the tooltip still anchors when the button is disabled */}
+        <span>
+          <IconButton
+            aria-label={
+              playingFromQueue ? "loop the playlist" : "loop the queue"
+            }
+            disabled={!track || (!playingFromQueue && userQueue.length === 0)}
+            onClick={handleToggleSource}
+          >
+            <QueueMusic color={playingFromQueue ? "primary" : undefined} />
+          </IconButton>
+        </span>
+      </Tooltip>
     </Box>
   );
 }

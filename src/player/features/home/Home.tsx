@@ -9,6 +9,7 @@ import {
 import AddIcon from "@mui/icons-material/AddCircleRounded";
 import SearchIcon from "@mui/icons-material/SearchRounded";
 import LocalOffer from "@mui/icons-material/LocalOfferRounded";
+import QueueMusicIcon from "@mui/icons-material/QueueMusicRounded";
 import SettingsIcon from "@mui/icons-material/SettingsRounded";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -93,6 +94,19 @@ export function Home({ onPlayTrack, onPlaySound }: HomeProps) {
           <SearchIcon />
           <Typography color="text.secondary">Search tracks by tag…</Typography>
         </Paper>
+        <Tooltip title="Queue">
+          <Paper
+            onClick={() => navigate("/queue")}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              px: 2,
+              cursor: "pointer",
+            }}
+          >
+            <QueueMusicIcon />
+          </Paper>
+        </Tooltip>
         <Tooltip title="Manage tags">
           <Paper
             onClick={() => navigate("/tags")}

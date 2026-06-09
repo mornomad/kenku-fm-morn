@@ -43,7 +43,14 @@ export interface PlaylistsState {
     byId: Record<string, Tag>;
     allIds: string[];
   };
+  // The play queue: an ordered list of track ids hand-picked from any
+  // playlist, played and looped as its own list. No duplicates.
+  queue: string[];
 }
+
+// The sentinel "playlist id" used when playback is started from the queue.
+// Real playlists use uuids, so this can never collide with one.
+export const QUEUE_PLAYLIST_ID = "queue";
 
 const initialState: PlaylistsState = {
   playlists: {
@@ -55,6 +62,7 @@ const initialState: PlaylistsState = {
     byId: {},
     allIds: [],
   },
+  queue: [],
 };
 
 export const playlistsSlice = createSlice({
@@ -66,6 +74,7 @@ export const playlistsSlice = createSlice({
       state.playlists.allIds.push(action.payload.id);
     },
     removePlaylist: (state, action: PayloadAction<string>) => {
+      const removed = new Set(state.playlists.byId[action.payload].tracks);
       for (let track of state.playlists.byId[action.payload].tracks) {
         delete state.tracks[track];
       }
@@ -73,6 +82,7 @@ export const playlistsSlice = createSlice({
       state.playlists.allIds = state.playlists.allIds.filter(
         (id) => id !== action.payload
       );
+      state.queue = state.queue.filter((id) => !removed.has(id));
     },
     editPlaylist: (state, action: PayloadAction<Partial<Playlist>>) => {
       if (!action.payload.id) {
@@ -121,6 +131,7 @@ export const playlistsSlice = createSlice({
         playlistId
       ].tracks.filter((id) => id !== trackId);
       delete state.tracks[trackId];
+      state.queue = state.queue.filter((id) => id !== trackId);
     },
     removeTracks: (
       state,
@@ -135,6 +146,7 @@ export const playlistsSlice = createSlice({
       for (const id of trackIds) {
         delete state.tracks[id];
       }
+      state.queue = state.queue.filter((id) => !remove.has(id));
     },
     editTrack: (state, action: PayloadAction<Partial<Track>>) => {
       if (!action.payload.id) {
@@ -167,6 +179,31 @@ export const playlistsSlice = createSlice({
       const newIndex = playlist.tracks.indexOf(action.payload.over);
       playlist.tracks.splice(oldIndex, 1);
       playlist.tracks.splice(newIndex, 0, action.payload.active);
+    },
+    // Append tracks to the play queue. Skips ids already queued (no
+    // duplicates) and ids that don't resolve to a real track.
+    addToQueue: (state, action: PayloadAction<{ trackIds: string[] }>) => {
+      for (const id of action.payload.trackIds) {
+        if (state.tracks[id] && !state.queue.includes(id)) {
+          state.queue.push(id);
+        }
+      }
+    },
+    removeFromQueue: (state, action: PayloadAction<string>) => {
+      state.queue = state.queue.filter((id) => id !== action.payload);
+    },
+    clearQueue: (state) => {
+      state.queue = [];
+    },
+    // Drag-reorder within the queue (same active/over shape as moveTrack).
+    moveQueueItem: (
+      state,
+      action: PayloadAction<{ active: string; over: string }>
+    ) => {
+      const oldIndex = state.queue.indexOf(action.payload.active);
+      const newIndex = state.queue.indexOf(action.payload.over);
+      state.queue.splice(oldIndex, 1);
+      state.queue.splice(newIndex, 0, action.payload.active);
     },
     // Relocate a track to a different playlist. The Track entry in the global
     // map is untouched — we just move its id from one playlist's list to
@@ -304,6 +341,10 @@ export const {
   addTag,
   editTag,
   removeTag,
+  addToQueue,
+  removeFromQueue,
+  clearQueue,
+  moveQueueItem,
 } = playlistsSlice.actions;
 
 export default playlistsSlice.reducer;

@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 
-import { Track } from "./playlistsSlice";
+import { Track, QUEUE_PLAYLIST_ID } from "./playlistsSlice";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
@@ -82,7 +82,12 @@ export function PlaylistRemote({
       if (playback.queue?.playlistId) {
         playlist = {
           id: playback.queue.playlistId,
-          title: playlists.playlists.byId[playback.queue.playlistId]?.title,
+          // The play queue has no real playlist entry — report it as "Queue".
+          title:
+            playlists.playlists.byId[playback.queue.playlistId]?.title ??
+            (playback.queue.playlistId === QUEUE_PLAYLIST_ID
+              ? "Queue"
+              : undefined),
         };
       }
       window.player.playlistPlaybackReply({

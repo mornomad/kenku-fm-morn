@@ -21,6 +21,9 @@ import {
   removeTrack,
   moveTrackToPlaylist,
   copyTrackToPlaylist,
+  addToQueue,
+  removeFromQueue,
+  QUEUE_PLAYLIST_ID,
   Playlist,
   Tag,
 } from "./playlistsSlice";
@@ -32,6 +35,7 @@ import { playlistImageUrl } from "./playlistImage";
 import { PlaylistPickerDialog } from "./PlaylistPickerDialog";
 import { RootState } from "../../app/store";
 import {
+  appendTracksToQueueIfNeeded,
   playPause,
   removeTrackFromQueue,
   startQueue,
@@ -98,6 +102,33 @@ export function TrackItem({
     handleMenuClose();
   }
 
+  // Whether this track is in the play queue (for the menu item label).
+  const inQueue = useSelector((state: RootState) =>
+    state.playlists.queue.includes(track.id),
+  );
+
+  function handleQueueToggle() {
+    if (inQueue) {
+      dispatch(removeFromQueue(track.id));
+      // Keep the live playback list in step if the queue is what's playing.
+      dispatch(
+        removeTrackFromQueue({
+          playlistId: QUEUE_PLAYLIST_ID,
+          trackId: track.id,
+        }),
+      );
+    } else {
+      dispatch(addToQueue({ trackIds: [track.id] }));
+      dispatch(
+        appendTracksToQueueIfNeeded({
+          playlistId: QUEUE_PLAYLIST_ID,
+          trackIds: [track.id],
+        }),
+      );
+    }
+    handleMenuClose();
+  }
+
   // null = closed; otherwise which action the playlist picker is for.
   const [picker, setPicker] = useState<null | "move" | "copy">(null);
 
@@ -130,6 +161,11 @@ export function TrackItem({
     dispatch(removeTrack({ trackId: track.id, playlistId: playlist.id }));
     dispatch(
       removeTrackFromQueue({ trackId: track.id, playlistId: playlist.id }),
+    );
+    // Also drop it from the live list when the play queue is what's playing
+    // (removeTrack already strips it from the persistent queue itself).
+    dispatch(
+      removeTrackFromQueue({ trackId: track.id, playlistId: QUEUE_PLAYLIST_ID }),
     );
     handleMenuClose();
   }
@@ -248,6 +284,9 @@ export function TrackItem({
           }}
         >
           Copy to playlist
+        </MenuItem>
+        <MenuItem onClick={handleQueueToggle}>
+          {inQueue ? "Remove from queue" : "Add to queue"}
         </MenuItem>
         <MenuItem onClick={handleCopyID}>Copy ID</MenuItem>
         <MenuItem onClick={handleDelete}>Delete</MenuItem>

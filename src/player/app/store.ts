@@ -80,6 +80,20 @@ const migrations = {
       },
     };
   },
+  // Version 5: the play queue (an ordered cross-playlist list of track ids)
+  // joins the playlists slice.
+  5: (state: any) => {
+    if (!state?.playlists) {
+      return state;
+    }
+    return {
+      ...state,
+      playlists: {
+        ...state.playlists,
+        queue: state.playlists.queue ?? [],
+      },
+    };
+  },
 };
 
 const playbackPersistConfig = {
@@ -103,7 +117,7 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
   key: "player",
-  version: 4,
+  version: 5,
   storage,
   whitelist: ["playlists", "soundboards", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),
