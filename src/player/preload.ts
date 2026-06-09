@@ -22,7 +22,8 @@ type Channel =
   | "PLAYER_REMOTE_SOUNDBOARD_GET_ALL_REQUEST"
   | "PLAYER_REMOTE_SOUNDBOARD_PLAY"
   | "PLAYER_REMOTE_SOUNDBOARD_STOP"
-  | "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST";
+  | "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST"
+  | "SEND_UI_SETTING_TO_PLAYER_WINDOW";
 
 const validChannels: Channel[] = [
   "PLAYER_REMOTE_PLAYLIST_GET_ALL_REQUEST",
@@ -41,6 +42,7 @@ const validChannels: Channel[] = [
   "PLAYER_REMOTE_SOUNDBOARD_PLAY",
   "PLAYER_REMOTE_SOUNDBOARD_STOP",
   "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST",
+  "SEND_UI_SETTING_TO_PLAYER_WINDOW",
 ];
 
 const api = {
@@ -74,6 +76,9 @@ const api = {
   // if cancelled). Used for setting a custom track thumbnail.
   showOpenImageDialog: (): Promise<string | undefined> => {
     return ipcRenderer.invoke("PLAYER_SHOW_OPEN_IMAGE_DIALOG");
+  },
+  sendUISettingToSettingsWindow: (name: string, value: string) => {
+    ipcRenderer.send("SEND_UI_SETTING_TO_SETTINGS_WINDOW", name, value);
   },
 };
 

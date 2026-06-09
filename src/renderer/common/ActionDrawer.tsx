@@ -3,11 +3,13 @@ import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import SettingsIcon from "@mui/icons-material/SettingsRounded";
+import UISettingsIcon from "@mui/icons-material/DisplaySettingsRounded";
 import { Toolbar, Stack, Typography, Link } from "@mui/material";
 import { OutputListItems } from "../features/output/OutputListItems";
 import { InputListItems } from "../features/input/InputListItems";
 import { BookmarkListItems } from "../features/bookmarks/BookmarkListItems";
 import { Settings } from "../features/settings/Settings";
+import { UISettings } from "../features/settings/UISettings";
 
 import { RootState } from "../app/store";
 import { useSelector } from "react-redux";
@@ -22,6 +24,7 @@ export function ActionDrawer() {
   const settings = useSelector((state: RootState) => state.settings);
   const connection = useSelector((state: RootState) => state.connection);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [UISettingsOpen, setUISettingsOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const hideScrollbar = useHideScrollbar(scrollRef);
@@ -60,15 +63,29 @@ export function ActionDrawer() {
               <img src={icon} />
             </Box>
           )}
-          <IconButton
-            onClick={() => setSettingsOpen(true)}
-            sx={{ WebkitAppRegion: "no-drag" }}
+          <Stack
+            direction="row"
           >
-            <SettingsIcon />
-          </IconButton>
+            <IconButton
+              onClick={() => setUISettingsOpen(true)}
+              sx={{ WebkitAppRegion: "no-drag" }}
+            >
+              <UISettingsIcon />
+            </IconButton>
+            <IconButton
+              onClick={() => setSettingsOpen(true)}
+              sx={{ WebkitAppRegion: "no-drag" }}
+            >
+              <SettingsIcon />
+            </IconButton>
+          </Stack>
           <Settings
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
+          />
+          <UISettings
+            open={UISettingsOpen}
+            onClose={() => setUISettingsOpen(false)}
           />
         </Toolbar>
         <Box sx={{ overflowY: "auto" }} ref={scrollRef} {...hideScrollbar}>

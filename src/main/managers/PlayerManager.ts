@@ -17,6 +17,8 @@ export class PlayerManager {
     ipcMain.on("PLAYER_REGISTER_VIEW", this._handleRegisterView);
     ipcMain.on("PLAYER_START_REMOTE", this._handleStartRemote);
     ipcMain.on("PLAYER_STOP_REMOTE", this._handleStopRemote);
+    // Forward SEND_UI_SETTING_TO_PLAYER_WINDOW from renderer to player view
+    ipcMain.on("SEND_UI_SETTING_TO_PLAYER_WINDOW", this._handleSendUISettingToPlayer);
   }
 
   destroy() {
@@ -25,6 +27,7 @@ export class PlayerManager {
     ipcMain.off("PLAYER_REGISTER_VIEW", this._handleRegisterView);
     ipcMain.off("PLAYER_START_REMOTE", this._handleStartRemote);
     ipcMain.off("PLAYER_STOP_REMOTE", this._handleStopRemote);
+    ipcMain.off("SEND_UI_SETTING_TO_PLAYER_WINDOW", this._handleSendUISettingToPlayer);
     this.stopRemote();
   }
 
@@ -93,5 +96,16 @@ export class PlayerManager {
 
   _handleRegisterView = (_: Electron.IpcMainEvent, viewId: number) => {
     this.registeredViewId = viewId;
+  };
+
+  _handleSendUISettingToPlayer = (
+    _: Electron.IpcMainEvent,
+    name: string,
+    value: string
+  ) => {
+    const playerView = this.getView();
+    if (playerView) {
+      playerView.send("SEND_UI_SETTING_TO_PLAYER_WINDOW", name, value);
+    }
   };
 }

@@ -62,6 +62,7 @@ export function Soundboards({ onPlay }: SoundboardProps) {
   const soundboards = useSelector(
     (state: RootState) => state.soundboards.soundboards
   );
+  const uisettings = useSelector((state: RootState) => state.uisettings);
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 10 },
@@ -127,6 +128,7 @@ export function Soundboards({ onPlay }: SoundboardProps) {
     <>
       <WallPaper />
       <Container
+        maxWidth={uisettings.byName["containerwidth"].value == "fixed" ? "lg" : false}
         sx={{
           padding: "0px !important",
           display: "flex",
@@ -157,7 +159,7 @@ export function Soundboards({ onPlay }: SoundboardProps) {
         <Grid
           container
           spacing={2}
-          columns={{ xs: 4, sm: 9, md: 12 }}
+          columns={{ xs: 12, sm: 12, md: 12 }}
           sx={{
             px: 2,
             pb: "248px",
@@ -176,7 +178,13 @@ export function Soundboards({ onPlay }: SoundboardProps) {
           >
             <SortableContext items={items} strategy={rectSortingStrategy}>
               {items.map((soundboard) => (
-                <Grid item xs={2} sm={3} md={3} key={soundboard.id}>
+                <Grid
+                  item
+                  xs={Number(uisettings.byName["xscolumnsnumber"].value)}
+                  sm={Number(uisettings.byName["smcolumnsnumber"].value)}
+                  md={Number(uisettings.byName["mdcolumnsnumber"].value)}
+                  key={soundboard.id}
+                >
                   <SortableItem id={soundboard.id}>
                     <SoundboardItem
                       soundboard={soundboard}

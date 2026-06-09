@@ -22,7 +22,9 @@ type Channel =
   | "BROWSER_VIEW_MEDIA_PAUSED"
   | "BROWSER_VIEW_NEW_TAB"
   | "BROWSER_VIEW_CLOSE_TAB"
-  | "PLAYER_REMOTE_ENABLED";
+  | "PLAYER_REMOTE_ENABLED"
+  | "DISPLAY_UI_SETTINGS_BAR"
+  | "SEND_UI_SETTING_TO_SETTINGS_WINDOW";
 
 const validChannels: Channel[] = [
   "ERROR",
@@ -43,6 +45,8 @@ const validChannels: Channel[] = [
   "BROWSER_VIEW_NEW_TAB",
   "BROWSER_VIEW_CLOSE_TAB",
   "PLAYER_REMOTE_ENABLED",
+  "DISPLAY_UI_SETTINGS_BAR",
+  "SEND_UI_SETTING_TO_SETTINGS_WINDOW",
 ];
 
 // Capture audio when new views are loaded
@@ -169,6 +173,9 @@ const api = {
   },
   clearCache: () => {
     return ipcRenderer.invoke("CLEAR_CACHE");
+  },
+  sendUISettingToPlayerWindow: (name: string, value: string) => {
+    ipcRenderer.send("SEND_UI_SETTING_TO_PLAYER_WINDOW", name, value);
   },
   platform: ipcRenderer.sendSync("GET_PLATFORM") as string,
   version: ipcRenderer.sendSync("GET_VERSION") as string,

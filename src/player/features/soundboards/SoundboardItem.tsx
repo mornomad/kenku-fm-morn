@@ -25,6 +25,7 @@ export function SoundboardItem({
   onPlay,
 }: SoundboardItemProps) {
   const soundboards = useSelector((state: RootState) => state.soundboards);
+  const uisettings = useSelector((state: RootState) => state.uisettings);
   const image = isBackground(soundboard.background)
     ? backgrounds[soundboard.background]
     : soundboard.background;
@@ -44,7 +45,7 @@ export function SoundboardItem({
       <CardActionArea onClick={() => onSelect(soundboard.id)}>
         <CardMedia
           component="img"
-          height="200px"
+          height={uisettings.byName["listitemheight"].value}
           image={image}
           alt={"Background"}
           sx={{ pointerEvents: "none" }}
@@ -74,7 +75,17 @@ export function SoundboardItem({
           pointerEvents: "none",
         }}
       >
-        <Typography variant="h5" component="div">
+        <Typography
+          variant="h5"
+          component="div"
+          sx={{
+            fontSize: uisettings.byName["gridmode"].value == "small"
+              ? "1rem"
+              : uisettings.byName["gridmode"].value == "normal"
+                ? "1.5rem"
+                : "2rem"
+          }}
+        >
           {soundboard.title}
         </Typography>
         <IconButton
