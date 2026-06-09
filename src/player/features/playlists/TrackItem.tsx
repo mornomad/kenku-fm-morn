@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import PlayArrow from "@mui/icons-material/PlayArrowRounded";
 import Pause from "@mui/icons-material/PauseRounded";
+import RadioButtonUnchecked from "@mui/icons-material/RadioButtonUncheckedRounded";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
 import Checkbox from "@mui/material/Checkbox";
+import Tooltip from "@mui/material/Tooltip";
 
 import MoreVert from "@mui/icons-material/MoreVertRounded";
 import Menu from "@mui/material/Menu";
@@ -102,12 +104,15 @@ export function TrackItem({
     handleMenuClose();
   }
 
-  // Whether this track is in the play queue (for the menu item label).
-  const inQueue = useSelector((state: RootState) =>
-    state.playlists.queue.includes(track.id),
-  );
+  // This track's 1-based position in the play queue, or null if not queued.
+  // (A primitive return keeps the selector referentially stable.)
+  const queuePosition = useSelector((state: RootState) => {
+    const index = state.playlists.queue.indexOf(track.id);
+    return index === -1 ? null : index + 1;
+  });
+  const inQueue = queuePosition !== null;
 
-  function handleQueueToggle() {
+  function toggleQueue() {
     if (inQueue) {
       dispatch(removeFromQueue(track.id));
       // Keep the live playback list in step if the queue is what's playing.
@@ -126,8 +131,36 @@ export function TrackItem({
         }),
       );
     }
+  }
+
+  function handleQueueToggle() {
+    toggleQueue();
     handleMenuClose();
   }
+
+  // Keyboard quick-queue: press Q while the pointer is over this row. The
+  // listener only exists while hovered, so there's one at most app-wide.
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => {
+    if (!hovered) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "q" && event.key !== "Q") return;
+      // Don't hijack the letter q while typing in a text field.
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+      toggleQueue();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // toggleQueue is recreated each render; re-running on these deps keeps the
+    // closure fresh without re-attaching on unrelated renders.
+  }, [hovered, inQueue, track.id]);
 
   // null = closed; otherwise which action the playlist picker is for.
   const [picker, setPicker] = useState<null | "move" | "copy">(null);
@@ -190,9 +223,17 @@ export function TrackItem({
       >
         <ListItemButton
           role={undefined}
-          sx={{ m: 0, borderRadius: "16px" }}
+          sx={{
+            m: 0,
+            borderRadius: "16px",
+            // Reveal the queue toggle when the row is hovered (queued tracks
+            // keep it visible via the button's own opacity).
+            "&:hover .queue-toggle": { opacity: 1 },
+          }}
           dense
           selected={isCurrentTrack}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
         >
           {selectionMode && (
             <Checkbox
@@ -250,6 +291,59 @@ export function TrackItem({
             // nested inside a <p>, which would be invalid HTML.
             secondaryTypographyProps={{ component: "div" }}
           />
+          <Tooltip
+            title={
+              inQueue
+                ? `In queue — #${queuePosition} (click or Q to remove)`
+                : "Add to queue (Q)"
+            }
+          >
+            <IconButton
+              aria-label={inQueue ? "remove from queue" : "add to queue"}
+              className="queue-toggle"
+              onClick={(event) => {
+                // Keep the click from also triggering the row.
+                event.stopPropagation();
+                toggleQueue();
+              }}
+              sx={{
+                opacity: inQueue ? 1 : 0,
+                transition: "opacity 0.2s",
+                "&:focus-visible": { opacity: 1 },
+              }}
+            >
+              {inQueue ? (
+                // Queued: a filled circle with the queue position inside.
+                <Box
+                  sx={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {queuePosition}
+                </Box>
+              ) : (
+                // Not queued: an empty ring, muted so it doesn't compete with
+                // the play button (brightens on direct hover).
+                <RadioButtonUnchecked
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.35)",
+                    ".queue-toggle:hover &": {
+                      color: "rgba(255, 255, 255, 0.7)",
+                    },
+                  }}
+                />
+              )}
+            </IconButton>
+          </Tooltip>
           <IconButton
             aria-label={playing ? "pause" : "play"}
             onClick={handlePlayPause}
