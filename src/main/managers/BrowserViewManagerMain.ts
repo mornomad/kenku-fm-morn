@@ -176,6 +176,13 @@ export class BrowserViewManagerMain {
     const view = new WebContentsView({
       webPreferences: {
         preload,
+        // Never throttle the PLAYER view (the only view created with a
+        // preload): its volume fades and progress updates run on JS timers,
+        // and throttling them while the window is hidden leaves new tracks
+        // stuck near volume 0. Regular web tabs keep default throttling so a
+        // silent YouTube/Discord tab doesn't burn CPU in the background —
+        // Chromium already exempts them automatically while they play audio.
+        backgroundThrottling: preload ? false : true,
       },
     });
     this.window.contentView.addChildView(view);
