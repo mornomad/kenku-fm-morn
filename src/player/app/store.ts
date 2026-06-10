@@ -5,6 +5,7 @@ import uisettingsReducer from "../common/UISettingsSlice";
 import playlsitPlaybackReducer from "../features/playlists/playlistPlaybackSlice";
 import soundboardPlaybackReducer from "../features/soundboards/soundboardPlaybackSlice";
 import settingsReducer from "../features/settings/settingsSlice";
+import { defaultGlobalKeybinds } from "../../types/keybinds";
 
 import {
   persistStore,
@@ -94,6 +95,19 @@ const migrations = {
       },
     };
   },
+  // Version 6: customizable global keybinds join the settings slice.
+  6: (state: any) => {
+    return {
+      ...state,
+      settings: {
+        ...(state?.settings ?? {}),
+        keybinds: {
+          ...defaultGlobalKeybinds,
+          ...(state?.settings?.keybinds ?? {}),
+        },
+      },
+    };
+  },
 };
 
 const playbackPersistConfig = {
@@ -117,7 +131,7 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
   key: "player",
-  version: 5,
+  version: 6,
   storage,
   whitelist: ["playlists", "soundboards", "settings", "uisettings"],
   migrate: createMigrate(migrations, { debug: false }),

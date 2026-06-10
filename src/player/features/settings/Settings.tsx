@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import Back from "@mui/icons-material/ChevronLeftRounded";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import FormControl from "@mui/material/FormControl";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -16,12 +17,18 @@ import Typography from "@mui/material/Typography";
 
 import { RootState } from "../../app/store";
 import {
+  resetKeybinds,
   setSearchMode,
   setTimelineStyle,
   setWaveformReflection,
   SearchMode,
   TimelineStyle,
 } from "./settingsSlice";
+import { KeybindField } from "./KeybindField";
+import {
+  globalKeybindActions,
+  globalKeybindLabels,
+} from "../../../types/keybinds";
 
 export function Settings() {
   const navigate = useNavigate();
@@ -35,6 +42,7 @@ export function Settings() {
   const waveformReflection = useSelector(
     (state: RootState) => state.settings.waveformReflection,
   );
+
 
   return (
     <Container sx={{ height: "100vh", overflowY: "auto", pb: "248px" }}>
@@ -166,6 +174,77 @@ export function Settings() {
             }
             label="Mirrored reflection under the waveform"
           />
+        </Box>
+      </Box>
+
+      <Box px={2} mt={3}>
+        <Typography variant="h6">Global shortcuts</Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          Work even while Kenku FM is in the background. Click a binding and
+          press a new combination to change it (a modifier is required).
+        </Typography>
+        <Stack gap={1} mt={1}>
+          {globalKeybindActions.map((action) => (
+            <Stack
+              key={action}
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{ maxWidth: 420 }}
+            >
+              <Typography>{globalKeybindLabels[action]}</Typography>
+              <KeybindField action={action} />
+            </Stack>
+          ))}
+        </Stack>
+        <Button
+          size="small"
+          sx={{ mt: 1 }}
+          onClick={() => dispatch(resetKeybinds())}
+        >
+          Reset to defaults
+        </Button>
+      </Box>
+
+      <Box px={2} mt={3}>
+        <Typography variant="h6">In-app shortcuts</Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          Active while the player is focused and you aren&apos;t typing.
+        </Typography>
+        <Box
+          component="table"
+          sx={{
+            borderCollapse: "collapse",
+            "& td": { py: 0.5, pr: 3, verticalAlign: "top" },
+            "& td:first-of-type": {
+              whiteSpace: "nowrap",
+              fontFamily: "monospace",
+              color: "text.secondary",
+            },
+          }}
+        >
+          <tbody>
+            <tr>
+              <td>Space</td>
+              <td>Play / pause</td>
+            </tr>
+            <tr>
+              <td>← / →</td>
+              <td>Seek 10s back / forward</td>
+            </tr>
+            <tr>
+              <td>↑ / ↓</td>
+              <td>Volume up / down</td>
+            </tr>
+            <tr>
+              <td>M</td>
+              <td>Mute / unmute</td>
+            </tr>
+            <tr>
+              <td>Q</td>
+              <td>Queue / unqueue the hovered track</td>
+            </tr>
+          </tbody>
         </Box>
       </Box>
     </Container>

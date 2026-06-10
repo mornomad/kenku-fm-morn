@@ -22,7 +22,12 @@ type Channel =
   | "PLAYER_REMOTE_SOUNDBOARD_GET_ALL_REQUEST"
   | "PLAYER_REMOTE_SOUNDBOARD_PLAY"
   | "PLAYER_REMOTE_SOUNDBOARD_STOP"
-  | "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST";
+  | "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST"
+  // Global keyboard shortcuts (registered in the main process) — toggles and
+  // steps, since the main process doesn't know the current playback state.
+  | "PLAYER_KEYBIND_PLAYBACK_PLAY_PAUSE"
+  | "PLAYER_KEYBIND_PLAYBACK_MUTE_TOGGLE"
+  | "PLAYER_KEYBIND_PLAYBACK_VOLUME_STEP";
 
 const validChannels: Channel[] = [
   "PLAYER_REMOTE_PLAYLIST_GET_ALL_REQUEST",
@@ -41,6 +46,9 @@ const validChannels: Channel[] = [
   "PLAYER_REMOTE_SOUNDBOARD_PLAY",
   "PLAYER_REMOTE_SOUNDBOARD_STOP",
   "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST",
+  "PLAYER_KEYBIND_PLAYBACK_PLAY_PAUSE",
+  "PLAYER_KEYBIND_PLAYBACK_MUTE_TOGGLE",
+  "PLAYER_KEYBIND_PLAYBACK_VOLUME_STEP",
 ];
 
 const api = {
@@ -74,6 +82,11 @@ const api = {
   // if cancelled). Used for setting a custom track thumbnail.
   showOpenImageDialog: (): Promise<string | undefined> => {
     return ipcRenderer.invoke("PLAYER_SHOW_OPEN_IMAGE_DIALOG");
+  },
+  // Push the user's global shortcut bindings to the main process, which
+  // re-registers them OS-wide (action name → Electron accelerator string).
+  setGlobalKeybinds: (keybinds: Record<string, string>) => {
+    ipcRenderer.send("PLAYER_KEYBINDS_SET", keybinds);
   },
 };
 

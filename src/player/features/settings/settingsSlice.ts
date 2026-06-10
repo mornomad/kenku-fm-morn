@@ -1,4 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import {
+  defaultGlobalKeybinds,
+  GlobalKeybindAction,
+  GlobalKeybinds,
+} from "../../../types/keybinds";
 
 // "split"   — the original two fields: a tags filter and a separate title filter.
 // "unified" — a single bar that searches tags by default; pressing space on an
@@ -14,12 +19,16 @@ export interface SettingsState {
   timelineStyle: TimelineStyle;
   // Draw the faded mirrored copy under the waveform.
   waveformReflection: boolean;
+  // Global (OS-wide) shortcuts: action → Electron accelerator string.
+  // "" = unbound. Pushed to the main process whenever they change.
+  keybinds: GlobalKeybinds;
 }
 
 const initialState: SettingsState = {
   searchMode: "unified",
   timelineStyle: "bars",
   waveformReflection: true,
+  keybinds: defaultGlobalKeybinds,
 };
 
 export const settingsSlice = createSlice({
@@ -35,10 +44,27 @@ export const settingsSlice = createSlice({
     setWaveformReflection: (state, action: PayloadAction<boolean>) => {
       state.waveformReflection = action.payload;
     },
+    setKeybind: (
+      state,
+      action: PayloadAction<{
+        action: GlobalKeybindAction;
+        accelerator: string;
+      }>
+    ) => {
+      state.keybinds[action.payload.action] = action.payload.accelerator;
+    },
+    resetKeybinds: (state) => {
+      state.keybinds = defaultGlobalKeybinds;
+    },
   },
 });
 
-export const { setSearchMode, setTimelineStyle, setWaveformReflection } =
-  settingsSlice.actions;
+export const {
+  setSearchMode,
+  setTimelineStyle,
+  setWaveformReflection,
+  setKeybind,
+  resetKeybinds,
+} = settingsSlice.actions;
 
 export default settingsSlice.reducer;

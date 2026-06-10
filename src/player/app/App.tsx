@@ -7,6 +7,7 @@ import Alert from "@mui/material/Alert";
 import { Routes, Route } from "react-router-dom";
 
 import { Player } from "../features/player/Player";
+import { PlayerKeybinds } from "../features/player/PlayerKeybinds";
 import { usePlaylistPlayback } from "../features/playlists/usePlaylistPlayback";
 import { PlaylistMediaSession } from "../features/playlists/PlaylistMediaSession";
 import { PlaylistRemote } from "../features/playlists/PlaylistRemote";
@@ -88,6 +89,7 @@ export function App() {
         onPlaylistPrevious={playlist.previous}
         onSoundboardStop={soundboard.stop}
       />
+      <PlayerKeybinds onSeek={playlist.seek} />
       <PlaylistMediaSession
         onSeek={playlist.seek}
         onNext={playlist.next}

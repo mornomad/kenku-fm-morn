@@ -6,6 +6,7 @@ import {
   BrowserWindow,
   components,
   dialog,
+  globalShortcut,
   protocol,
   session,
   shell,
@@ -262,6 +263,11 @@ if (!hasSingleInstanceLock) {
       }
       window.focus();
     }
+  });
+
+  // Belt-and-braces: make sure no global keybinds outlive the app.
+  app.on("will-quit", () => {
+    globalShortcut.unregisterAll();
   });
 
   // Quit when all windows are closed, except on macOS. There, it's common
